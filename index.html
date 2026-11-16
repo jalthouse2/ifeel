@@ -9,25 +9,30 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* VOICE: calm, quiet, unhurried.
+     IDEA: a muted retro feelings wheel you can turn by hand, like a paper volvelle.
+     PICTURE: the wheel itself, with a lens that swells whatever reaches the pointer.
+     COLOUR and TYPE: navy, sage, mustard, dusty blue, brick, burnt orange on near-white; Manrope.
+     LAYOUT: one column, wheel first, readout and two buttons under it, sheets slide up. */
   :root {
     --ink: #26324A;
     --ink-soft: #55607A;
     --bg-a: #FCFCFB;
     --bg-b: #F3F1EE;
-    --hub: #FFFFFF;
     --accent: #2F3F5E;
-    --accent-ink: #FFFFFF;
-    --panel: rgba(255,255,255,0.72);
+    --line: #DCDFE6;
+    --panel: rgba(255,255,255,0.78);
   }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; min-width: 0; }
   html, body { margin: 0; height: 100%; }
   body {
     font-family: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
     color: var(--ink);
-    background: radial-gradient(120% 90% at 50% 40%, var(--bg-b) 0%, var(--bg-a) 100%);
+    background: radial-gradient(120% 90% at 50% 40%, var(--bg-a) 0%, var(--bg-b) 100%);
     background-attachment: fixed;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior: none;
+    overflow-x: clip;
   }
   ::selection { background: #E9D6AE; }
   button { font: inherit; color: inherit; cursor: pointer; }
@@ -39,13 +44,10 @@
     max-width: 720px; margin: 0 auto;
   }
   .brand { font-weight: 700; font-size: 24px; letter-spacing: -0.02em; }
-  .brand span { color: var(--accent); }
+  .brand span { color: #8C6A1F; }
 
-  main {
-    max-width: 720px; margin: 0 auto; padding: 0 16px 24px;
-    display: flex; flex-direction: column; align-items: center;
-  }
-  h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; margin: 6px 0 10px; text-align: center; color: var(--ink-soft); }
+  main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; display: flex; flex-direction: column; align-items: center; }
+  h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; margin: 6px 0 10px; text-align: center; color: var(--ink-soft); min-height: 1.3em; }
 
   .wheelwrap { position: relative; width: min(94vw, calc(100dvh - 300px), 620px); min-width: 280px; aspect-ratio: 1; }
   #wheel { width: 100%; height: 100%; display: block; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
@@ -59,57 +61,75 @@
     border-top: 22px solid var(--ink);
     filter: drop-shadow(0 2px 2px rgba(38,50,74,.25));
   }
-
-  .seg { transition: transform .28s cubic-bezier(.2,.8,.2,1); }
-  .seg path { stroke: rgba(255,255,255,.75); stroke-width: 2; transition: stroke-width .2s; }
+  .seg path { stroke: rgba(255,255,255,.8); stroke-width: 2; }
   .seg text { font-family: "Manrope", system-ui, sans-serif; font-weight: 600; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
   .seg.on path { stroke: #fff; stroke-width: 5; }
   .seg.on text { font-weight: 700; }
-  .hub { fill: var(--hub); stroke: #E6E3DE; stroke-width: 3; }
+  .seg.onp path { stroke: #fff; stroke-width: 3.5; }
+  .hub { fill: #fff; stroke: #E6E3DE; stroke-width: 3; }
   #centerG { cursor: pointer; }
   #centerG text { text-anchor: middle; dominant-baseline: central; font-family: "Manrope", system-ui, sans-serif; pointer-events: none; fill: var(--ink); }
 
   .readout { display: flex; align-items: center; gap: 14px; min-height: 76px; margin-top: 10px; }
-  .readout .dot { width: 22px; height: 22px; border-radius: 50%; flex: none; box-shadow: 0 0 0 3px rgba(255,255,255,.8); transition: background .3s; }
+  .readout .dot { width: 22px; height: 22px; border-radius: 50%; flex: none; box-shadow: 0 0 0 3px rgba(255,255,255,.9); transition: background .3s; }
   .readout .path { font-size: 16px; color: var(--ink-soft); font-weight: 500; }
   .readout .word { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
   .readout.landed .word { animation: settle .6s ease; }
   @keyframes settle { 0% { transform: scale(.94); opacity: .5 } 100% { transform: none; opacity: 1 } }
 
   .actions { display: flex; gap: 12px; margin-top: 6px; }
-  .btn { border: 0; border-radius: 999px; padding: 14px 26px; font-size: 18px; font-weight: 600; }
-  .btn.primary { background: var(--accent); color: var(--accent-ink); }
-  .btn.ghost { background: var(--panel); color: var(--ink); }
-  .hint { font-size: 15px; color: var(--ink-soft); margin: 14px 0 0; text-align: center; }
+  .btn { border: 0; border-radius: 999px; padding: 14px 26px; font-size: 18px; font-weight: 600; min-height: 48px; }
+  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.ghost { background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+  .hint { font-size: 15px; color: var(--ink-soft); margin: 14px 0 0; text-align: center; min-height: 44px; }
+  .linkish { background: none; border: 0; text-decoration: underline; color: var(--ink); font-size: 16px; padding: 10px; }
 
   #scrim { position: fixed; inset: 0; background: rgba(38,50,74,.28); opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 10; }
   #scrim.show { opacity: 1; pointer-events: auto; }
   .sheet {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 11;
-    max-width: 620px; margin: 0 auto; max-height: 86dvh; overflow: auto;
-    background: #FCFBFE; border-radius: 26px 26px 0 0;
+    max-width: 620px; margin: 0 auto; max-height: 88dvh; overflow: auto;
+    background: #FCFCFB; border-radius: 26px 26px 0 0;
     padding: 22px 22px max(22px, env(safe-area-inset-bottom));
     transform: translateY(105%); transition: transform .32s cubic-bezier(.2,.8,.2,1);
     box-shadow: 0 -8px 30px rgba(38,50,74,.15);
   }
   .sheet.show { transform: none; }
   .sheet h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
-  .sheet h2 .dot { width: 18px; height: 18px; border-radius: 50%; }
-  .sheet .sub { color: var(--ink-soft); font-size: 16px; margin: 0 0 18px; }
+  .sheet h2 .dot { width: 18px; height: 18px; border-radius: 50%; flex: none; }
+  .sheet .sub { color: var(--ink-soft); font-size: 16px; margin: 0 0 14px; line-height: 1.5; }
   .sheet h3 { font-size: 17px; font-weight: 600; margin: 18px 0 10px; }
+  .muted { font-weight: 400; color: var(--ink-soft); }
   .levels { display: flex; gap: 8px; }
-  .levels button { flex: 1; border: 2px solid #DCDFE6; background: #fff; border-radius: 14px; padding: 12px 0; font-size: 18px; font-weight: 600; }
+  .levels button { flex: 1; border: 2px solid var(--line); background: #fff; border-radius: 14px; padding: 12px 0; font-size: 18px; font-weight: 600; }
   .levels button[aria-pressed="true"] { border-color: var(--accent); background: #E8ECF3; }
   .levels-legend { display: flex; justify-content: space-between; font-size: 14px; color: var(--ink-soft); margin-top: 6px; }
-  textarea { width: 100%; min-height: 90px; border: 2px solid #DCDFE6; border-radius: 14px; padding: 12px; font: inherit; font-size: 17px; color: var(--ink); resize: vertical; background: #fff; }
-  .sheet .row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+  textarea, input[type=text] { width: 100%; border: 2px solid var(--line); border-radius: 14px; padding: 12px; font: inherit; font-size: 17px; color: var(--ink); background: #fff; }
+  textarea { min-height: 84px; resize: vertical; }
+  .sheet .row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
 
-  .strip { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; }
+  .bodycheck { display: grid; grid-template-columns: 120px minmax(0,1fr); gap: 16px; align-items: center; }
+  .bodycheck svg { width: 120px; height: auto; }
+  .bodycheck svg [data-zone] { fill: #E4E7EE; stroke: #fff; stroke-width: 2; cursor: pointer; transition: fill .2s; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips button { border: 2px solid var(--line); background: #fff; border-radius: 999px; padding: 9px 14px; font-size: 16px; font-weight: 600; min-height: 44px; }
+  .chips button[aria-pressed="true"] { border-color: var(--accent); background: #E8ECF3; }
+
+  .options { display: grid; grid-template-columns: minmax(0,1fr); gap: 10px; }
+  .opt { text-align: left; border: 0; border-top: 3px solid var(--accent); background: #F0F2F6; border-radius: 4px 4px 14px 14px; padding: 14px 16px; }
+  .opt strong { display: block; font-size: 18px; }
+  .opt span { font-size: 16px; color: var(--ink-soft); }
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 10px 0; }
+  .stage svg { width: 170px; height: 170px; }
+  .stage .big { font-size: 22px; font-weight: 700; text-align: center; }
+  .msg { background: #F0F2F6; border-radius: 14px; padding: 14px 16px; font-size: 18px; width: 100%; }
+
+  .strip { display: grid; grid-template-columns: repeat(14, minmax(0,1fr)); gap: 4px; }
   .day { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 64px; }
-  .day .lbl { font-size: 12px; color: var(--ink-soft); }
+  .day .lbl { font-size: 13px; color: var(--ink-soft); }
   .day .d { width: 12px; height: 12px; border-radius: 50%; }
   .entries { list-style: none; padding: 0; margin: 0; }
-  .entries li { display: grid; grid-template-columns: 16px 1fr auto; gap: 12px; align-items: start; padding: 12px 0; border-top: 1px solid #ECEEF2; }
+  .entries li { display: grid; grid-template-columns: 16px minmax(0,1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-top: 1px solid #ECEEF2; }
   .entries .d { width: 16px; height: 16px; border-radius: 50%; margin-top: 4px; }
   .entries .w { font-weight: 700; font-size: 18px; }
   .entries .p { font-size: 14px; color: var(--ink-soft); }
@@ -119,7 +139,8 @@
 
   #toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 30px); opacity: 0; background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 999px; font-size: 16px; transition: all .3s; z-index: 20; pointer-events: none; }
   #toast.show { opacity: 1; transform: translate(-50%, 0); }
-  @media (prefers-reduced-motion: reduce) { .seg, .sheet, #toast { transition: none; } }
+  @media (max-width: 420px) { .bodycheck { grid-template-columns: 92px minmax(0,1fr); } .bodycheck svg { width: 92px; } }
+  @media (prefers-reduced-motion: reduce) { .sheet, #toast { transition: none; } }
 </style>
 </head>
 <body>
@@ -133,10 +154,10 @@
   <div class="wheelwrap">
     <div class="pointer" aria-hidden="true"></div>
     <svg id="wheel" viewBox="-500 -500 1000 1000" role="application" aria-label="Emotion wheel. Use left and right arrows to turn, Enter to open or choose, Escape to go back." tabindex="0">
-      <g id="zoom"><g id="rot"></g></g>
+      <g id="zoom"><g id="segs"></g></g>
       <g id="centerG">
         <circle class="hub" r="92"></circle>
-        <text id="hubMain" y="-6" font-size="30" font-weight="700"></text>
+        <text id="hubMain" y="-6" font-size="28" font-weight="700"></text>
         <text id="hubSub" y="30" font-size="18" font-weight="500"></text>
       </g>
     </svg>
@@ -150,7 +171,7 @@
     <button class="btn ghost" id="spinBtn">Spin</button>
     <button class="btn primary" id="logBtn">That's it</button>
   </div>
-  <p class="hint" id="hint">Drag to turn · tap a slice to open it · tap the centre to go back</p>
+  <div class="hint" id="hint"></div>
 </main>
 
 <div id="scrim"></div>
@@ -161,12 +182,34 @@
   <h3>How strong is it?</h3>
   <div class="levels" id="levels"></div>
   <div class="levels-legend"><span>a little</span><span>a lot</span></div>
-  <h3>What's behind it? <span style="font-weight:400;color:var(--ink-soft)">(optional)</span></h3>
+  <h3>Where do you feel it? <span class="muted">(optional)</span></h3>
+  <div class="bodycheck">
+    <svg viewBox="0 0 140 262" aria-hidden="true" id="bodySvg">
+      <ellipse data-zone="Head" cx="70" cy="27" rx="18" ry="21"/>
+      <rect data-zone="Jaw and throat" x="61" y="49" width="18" height="14" rx="6"/>
+      <rect data-zone="Shoulders" x="32" y="63" width="76" height="16" rx="8"/>
+      <rect data-zone="Chest" x="44" y="80" width="52" height="40" rx="10"/>
+      <rect data-zone="Stomach" x="46" y="121" width="48" height="42" rx="12"/>
+      <rect data-zone="Arms and hands" x="16" y="80" width="15" height="88" rx="7"/>
+      <rect data-zone="Arms and hands" x="109" y="80" width="15" height="88" rx="7"/>
+      <rect data-zone="Legs" x="47" y="165" width="21" height="92" rx="10"/>
+      <rect data-zone="Legs" x="72" y="165" width="21" height="92" rx="10"/>
+    </svg>
+    <div class="chips" id="zones"></div>
+  </div>
+  <h3>What's behind it? <span class="muted">(optional)</span></h3>
   <textarea id="note" placeholder="A few words are enough"></textarea>
   <div class="row">
     <button class="btn ghost" id="cancelLog">Not now</button>
     <button class="btn primary" id="saveLog">Save</button>
   </div>
+</section>
+
+<section class="sheet" id="afterSheet" role="dialog" aria-modal="true" aria-labelledby="afterTitle">
+  <h2 id="afterTitle"></h2>
+  <p class="sub" id="afterSub"></p>
+  <div id="afterBody"></div>
+  <div class="row"><button class="btn ghost" id="afterDone">Done</button></div>
 </section>
 
 <section class="sheet" id="journalSheet" role="dialog" aria-modal="true" aria-labelledby="jTitle">
@@ -181,33 +224,54 @@
 <div id="toast" role="status"></div>
 
 <script>
-(() => {
-  // ---------- Data: the feelings wheel (core → secondary → specific), clockwise from the top ----------
-  const RAW = {
-    Fearful:   { Scared:['Helpless','Frightened'], Anxious:['Overwhelmed','Worried'], Insecure:['Inadequate','Inferior'], Weak:['Worthless','Insignificant'], Rejected:['Excluded','Persecuted'], Threatened:['Nervous','Exposed'] },
-    Angry:     { 'Let down':['Betrayed','Resentful'], Humiliated:['Disrespected','Ridiculed'], Bitter:['Indignant','Violated'], Mad:['Furious','Jealous'], Aggressive:['Provoked','Hostile'], Frustrated:['Infuriated','Annoyed'], Distant:['Withdrawn','Numb'], Critical:['Skeptical','Dismissive'] },
-    Disgusted: { Disapproving:['Judgmental','Embarrassed'], Disappointed:['Appalled','Revolted'], Awful:['Nauseated','Detestable'], Repelled:['Horrified','Hesitant'] },
-    Sad:       { Hurt:['Embarrassed','Disappointed'], Depressed:['Inferior','Empty'], Guilty:['Remorseful','Ashamed'], Despair:['Powerless','Grief'], Vulnerable:['Fragile','Victimized'], Lonely:['Abandoned','Isolated'] },
-    Happy:     { Optimistic:['Inspired','Hopeful'], Trusting:['Intimate','Sensitive'], Peaceful:['Thankful','Loving'], Powerful:['Creative','Courageous'], Accepted:['Valued','Respected'], Proud:['Confident','Successful'], Interested:['Inquisitive','Curious'], Content:['Joyful','Free'], Playful:['Cheeky','Aroused'] },
-    Surprised: { Excited:['Energetic','Eager'], Amazed:['Awe','Astonished'], Confused:['Perplexed','Disillusioned'], Startled:['Dismayed','Shocked'] },
-    Bad:       { Tired:['Unfocused','Sleepy'], Stressed:['Out of control','Overwhelmed'], Busy:['Rushed','Pressured'], Bored:['Apathetic','Indifferent'] }
-  };
-  const PALETTE = { Fearful:'#C9773D', Angry:'#B5463E', Disgusted:'#8C8547', Sad:'#5A8BAC', Happy:'#DDB45C', Surprised:'#678A7C', Bad:'#2F3F5E' };
+{
+  // ---------- Feelings: core → secondary → specific, clockwise from the top ----------
+  // The first three families (pleasant) take half the wheel; the rest share the other half.
+  const FAMILIES = [
+    { name: 'Joyful', color: '#D9AE55', tone: 'pleasant', secs: {
+      Playful: ['Cheeky','Amused','Aroused'], Cheerful: ['Delighted','Jovial','Pleased'], Elated: ['Ecstatic','Triumphant'],
+      Interested: ['Curious','Inquisitive','Fascinated'], Optimistic: ['Hopeful','Inspired','Encouraged'], Enthusiastic: ['Passionate','Motivated','Energized'] } },
+    { name: 'Powerful', color: '#5F8577', tone: 'pleasant', secs: {
+      Proud: ['Successful','Confident','Satisfied'], Accepted: ['Respected','Valued','Appreciated'], Courageous: ['Daring','Self-assured'],
+      Creative: ['Imaginative','Stimulated'], Resilient: ['Strong','Faithful'], Important: ['Worthwhile','Valuable'], Aware: ['Awakened','Authentic'] } },
+    { name: 'Peaceful', color: '#34476B', tone: 'pleasant', secs: {
+      Content: ['Free','Relieved'], Calm: ['Relaxed','Serene','Chilled'], Trusting: ['Safe','Receptive','Sensitive'],
+      Loving: ['Intimate','Nurturing','Generous'], Thankful: ['Grateful','Appreciative','Blessed'], Thoughtful: ['Pensive','Admiring'] } },
+    { name: 'Sad', color: '#5A8BAC', secs: {
+      Lonely: ['Isolated','Abandoned','Neglected'], Vulnerable: ['Victimized','Fragile'], Despair: ['Grief','Powerless','Hopeless'],
+      Guilty: ['Ashamed','Remorseful','Mortified'], Depressed: ['Empty','Inferior','Miserable'], Hurt: ['Disappointed','Embarrassed','Injured'], Somber: ['Sorrowful','Discouraged'] } },
+    { name: 'Disgusted', color: '#8C8547', secs: {
+      Disapproving: ['Judgmental','Embarrassed'], Disappointed: ['Appalled','Revolted'], Awful: ['Nauseated','Detestable','Queasy'],
+      Repelled: ['Horrified','Hesitant'], Aversion: ['Distaste','Loathing'] } },
+    { name: 'Angry', color: '#B5463E', secs: {
+      'Let down': ['Betrayed','Resentful','Wronged'], Humiliated: ['Disrespected','Ridiculed','Insulted'], Bitter: ['Indignant','Violated','Envious'],
+      Mad: ['Furious','Jealous','Enraged'], Aggressive: ['Provoked','Hostile','Confrontational'], Frustrated: ['Infuriated','Annoyed','Thwarted'],
+      Irritated: ['Agitated','Impatient'], Distant: ['Withdrawn','Numb'], Critical: ['Skeptical','Dismissive','Sarcastic'] } },
+    { name: 'Fearful', color: '#C9773D', secs: {
+      Scared: ['Helpless','Frightened','Terrified'], Anxious: ['Overwhelmed','Worried','Uneasy'], Insecure: ['Inadequate','Inferior','Unsure'],
+      Weak: ['Worthless','Insignificant'], Rejected: ['Excluded','Persecuted','Unwanted'], Threatened: ['Nervous','Exposed','Apprehensive'] } },
+    { name: 'Bad', color: '#6E6787', secs: {
+      Bored: ['Indifferent','Apathetic'], Busy: ['Pressured','Rushed','Hurried'], Stressed: ['Overwhelmed','Out of control'], Tired: ['Sleepy','Unfocused','Exhausted'] } },
+    { name: 'Surprised', color: '#A86B78', tone: 'mixed', pleasantSecs: ['Amazed','Moved','Excited'], secs: {
+      Startled: ['Shocked','Dismayed'], Confused: ['Disillusioned','Perplexed','Distracted'], Amazed: ['Astonished','Awe','Speechless'],
+      Moved: ['Touched','Overcome'], Excited: ['Eager','Energetic'] } }
+  ];
 
   const hexToRgb = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
   const rgbToHex = c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
   const mix = (h, t) => rgbToHex(hexToRgb(h).map(v => v + (255 - v) * t));
   const lum = h => { const [r,g,b] = hexToRgb(h).map(v => { v /= 255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); }); return .2126*r + .7152*g + .0722*b; };
   const DARK = '#26324A';
-  const textOn = h => { const L = lum(h); const cWhite = 1.05 / (L + .05); const cDark = (L + .05) / (lum(DARK) + .05); return cWhite >= 3.2 && cWhite >= cDark * 0.8 ? '#FFFFFF' : DARK; };
+  const textOn = h => { const L = lum(h); const cW = 1.05 / (L + .05), cD = (L + .05) / (lum(DARK) + .05); return cW >= 3.2 && cW >= cD * 0.8 ? '#FFFFFF' : DARK; };
 
   const ROOT = { name: '', depth: 0, children: [] };
-  for (const [core, secs] of Object.entries(RAW)) {
-    const base = PALETTE[core];
-    const cn = { name: core, depth: 1, parent: ROOT, color: base, children: [] };
-    Object.entries(secs).forEach(([s, leaves], i) => {
-      const sn = { name: s, depth: 2, parent: cn, color: mix(base, .14 + .08 * (i % 2)), children: [] };
-      leaves.forEach((l, j) => sn.children.push({ name: l, depth: 3, parent: sn, color: mix(base, .34 + .08 * ((i * 2 + j) % 2)), leaves: 1 }));
+  for (const f of FAMILIES) {
+    const cn = { name: f.name, depth: 1, parent: ROOT, color: f.color, tone: f.tone || 'unpleasant', children: [] };
+    let k = 0;
+    Object.entries(f.secs).forEach(([s, leaves], i) => {
+      const tone = f.tone === 'pleasant' || (f.pleasantSecs || []).includes(s) ? 'pleasant' : 'unpleasant';
+      const sn = { name: s, depth: 2, parent: cn, tone, color: mix(f.color, .14 + .08 * (i % 2)), children: [] };
+      leaves.forEach(l => sn.children.push({ name: l, depth: 3, parent: sn, tone, leaves: 1, color: mix(f.color, .34 + .08 * (k++ % 2)) }));
       sn.leaves = leaves.length;
       cn.children.push(sn);
     });
@@ -220,76 +284,99 @@
 
   // ---------- Geometry ----------
   const NS = 'http://www.w3.org/2000/svg';
-  const R0 = 92, R1 = 262, R2 = 478;
+  const R0 = 92, R1 = 256, R2 = 452, BUMP = 40;
   const mod = (a, m) => ((a % m) + m) % m;
-  const norm = a => { a = mod(a + 180, 360) - 180; return a; };
+  const norm = a => mod(a + 180, 360) - 180;
   const pt = (r, a) => { const t = a * Math.PI / 180; return [r * Math.sin(t), -r * Math.cos(t)]; };
   function arcPath(r0, r1, a0, a1) {
     const large = a1 - a0 > 180 ? 1 : 0;
     const [x0, y0] = pt(r1, a0), [x1, y1] = pt(r1, a1), [x2, y2] = pt(r0, a1), [x3, y3] = pt(r0, a0);
-    return `M${x0},${y0}A${r1},${r1} 0 ${large} 1 ${x1},${y1}L${x2},${y2}A${r0},${r0} 0 ${large} 0 ${x3},${y3}Z`;
+    return `M${x0.toFixed(1)},${y0.toFixed(1)}A${r1},${r1} 0 ${large} 1 ${x1.toFixed(1)},${y1.toFixed(1)}L${x2.toFixed(1)},${y2.toFixed(1)}A${r0},${r0} 0 ${large} 0 ${x3.toFixed(1)},${y3.toFixed(1)}Z`;
   }
   const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
 
   const $ = id => document.getElementById(id);
-  const svg = $('wheel'), zoomG = $('zoom'), rotG = $('rot');
+  const svg = $('wheel'), zoomG = $('zoom'), segG = $('segs');
   let focus = ROOT, segs = [], rot = 0, current = -1, spinning = false;
+  let K = 1, W = 14, maxRing = 1;
+
+  // Lens: slices near the pointer get wider (fisheye on angle), longer and larger-lettered.
+  const fish = d => { const n = Math.round(d / 360), r = d - 360 * n, x = r / 180; return 180 * (K + 1) * x / (K * Math.abs(x) + 1) + 360 * n; };
 
   function layout(node) {
-    const out = [];
-    const kids = node.children;
-    const two = kids.some(k => k.children);
+    const out = [], kids = node.children, two = kids.some(k => k.children);
     const rings = two ? [[R0, R1], [R1, R2]] : [[R0, R2]];
+    let spans;
+    if (node === ROOT) {
+      const P = kids.filter(k => k.tone === 'pleasant').reduce((a, k) => a + k.leaves, 0);
+      const U = kids.filter(k => k.tone !== 'pleasant').reduce((a, k) => a + k.leaves, 0);
+      spans = kids.map(k => 180 * k.leaves / (k.tone === 'pleasant' ? P : U));
+    } else spans = kids.map(k => 360 * k.leaves / node.leaves);
     let a = 0;
-    for (const k of kids) {
-      const span = 360 * k.leaves / node.leaves;
-      out.push({ node: k, a0: a, a1: a + span, r0: rings[0][0], r1: rings[0][1], ring: 0 });
+    kids.forEach((k, i) => {
+      const span = spans[i];
+      out.push({ node: k, a0: a, a1: a + span, r0: rings[0][0], r1: rings[0][1], ring: 0, two });
       if (two && k.children) {
         let b = a;
-        for (const g of k.children) {
-          const s = span * g.leaves / k.leaves;
-          out.push({ node: g, a0: b, a1: b + s, r0: rings[1][0], r1: rings[1][1], ring: 1 });
-          b += s;
-        }
+        for (const g of k.children) { const s = span * g.leaves / k.leaves; out.push({ node: g, a0: b, a1: b + s, r0: rings[1][0], r1: rings[1][1], ring: 1, two }); b += s; }
       }
       a += span;
-    }
+    });
     return out;
   }
 
-  function fontFor(seg, two) {
-    if (!two) return 40;
-    if (focus === ROOT) return seg.ring === 0 ? 34 : 25;
-    return seg.ring === 0 ? 30 : 28;
-  }
+  const baseFont = s => !s.two ? 42 : focus === ROOT ? (s.ring === 0 ? 34 : 26) : (s.ring === 0 ? 30 : 28);
 
   function build() {
     segs = layout(focus);
-    const two = segs.some(s => s.ring === 1);
-    rotG.textContent = '';
+    maxRing = Math.max(...segs.map(s => s.ring));
+    const outer = segs.filter(s => s.ring === maxRing).length;
+    K = outer >= 30 ? 0.85 : outer >= 10 ? 0.6 : 0.15;
+    W = Math.max(8, 360 / outer * 2.2);
+    segG.textContent = '';
     segs.forEach((s, i) => {
       s.mid = (s.a0 + s.a1) / 2;
-      s.rm = (s.r0 + s.r1) / 2 + (s.ring === 1 || !two ? 6 : 0);
-      s.flip = null;
       const g = el('g', { class: 'seg', 'data-i': i });
-      const p = el('path', { d: arcPath(s.r0, s.r1, s.a0, s.a1), fill: s.node.color });
-      const t = el('text', { 'font-size': fontFor(s, two), fill: textOn(s.node.color) });
-      t.textContent = s.node.name;
-      g.append(p, t);
-      rotG.append(g);
-      s.g = g; s.t = t;
+      s.p = el('path', { fill: s.node.color });
+      s.t = el('text', { fill: textOn(s.node.color) });
+      s.t.textContent = s.node.name;
+      g.append(s.p, s.t); segG.append(g); s.g = g;
     });
     segs.forEach(s => { s.parentSeg = segs.find(o => o.node === s.node.parent) || null; });
     current = -1;
     updateHub();
-    applyRot(true);
+    draw();
+  }
+
+  function draw() {
+    const p = mod(-rot, 360);
+    for (const s of segs) {
+      const d0 = norm(s.a0 - p), d1 = d0 + (s.a1 - s.a0), dm = (d0 + d1) / 2;
+      const e = Math.exp(-((dm / W) ** 2));
+      const D0 = fish(d0), D1 = fish(d1), Dm = (D0 + D1) / 2;
+      const r1 = s.r1 + (s.ring === maxRing ? BUMP * e : 0);
+      s.p.setAttribute('d', arcPath(s.r0, r1, D0, D1));
+      const rm = (s.r0 + r1) / 2;
+      const arcW = (D1 - D0) * Math.PI / 180 * rm;
+      const radial = r1 - s.r0 - 20;
+      const fs = Math.min(baseFont(s) * (1 + .28 * e), arcW * 0.72, radial / (s.node.name.length * 0.6));
+      if (fs < 14) { s.t.setAttribute('visibility', 'hidden'); continue; }
+      const flip = mod(Dm, 360) > 180;
+      s.t.setAttribute('visibility', 'visible');
+      s.t.setAttribute('font-size', fs.toFixed(1));
+      s.t.setAttribute('transform', `rotate(${(Dm - 90).toFixed(2)}) translate(${rm.toFixed(1)} 0)${flip ? ' rotate(180)' : ''}`);
+    }
+    const i = pick();
+    if (i !== current) setCurrent(i);
   }
 
   function updateHub() {
+    if (breathing) return;
     if (focus === ROOT) { $('hubMain').textContent = 'iFeel'; $('hubSub').textContent = 'spin me'; }
     else { $('hubMain').textContent = focus.name; $('hubSub').textContent = '‹ back'; }
     $('hubMain').setAttribute('font-size', focus.name.length > 9 ? 22 : 28);
     $('prompt').textContent = focus === ROOT ? 'How are you, right now?' : `${focus.name}… which kind?`;
+    $('hint').textContent = 'Drag to turn · tap a slice to open it · tap the centre to go back';
   }
 
   function pick() {
@@ -299,48 +386,27 @@
     return best;
   }
 
-  function pop(s, d) {
-    if (!s) return;
-    const [x, y] = pt(d, s.mid);
-    s.g.style.transform = d ? `translate(${x}px, ${y}px)` : '';
-  }
-
   function setCurrent(i) {
     const prev = segs[current];
-    if (prev) { prev.g.classList.remove('on'); pop(prev, 0); pop(prev.parentSeg, 0); if (prev.parentSeg) prev.parentSeg.g.classList.remove('on'); }
+    if (prev) { prev.g.classList.remove('on'); if (prev.parentSeg) prev.parentSeg.g.classList.remove('onp'); }
     current = i;
     const s = segs[i];
     if (!s) return;
     s.g.classList.add('on');
-    if (s.parentSeg) { pop(s.parentSeg, 8); s.parentSeg.g.classList.add('on'); }
-    pop(s, s.parentSeg ? 18 : 22);
-    // bring the active slice above its neighbours
-    if (s.parentSeg) rotG.appendChild(s.parentSeg.g);
-    rotG.appendChild(s.g);
+    if (s.parentSeg) { s.parentSeg.g.classList.add('onp'); segG.appendChild(s.parentSeg.g); }
+    segG.appendChild(s.g);
     const p = pathOf(s.node);
     $('roWord').textContent = s.node.name;
-    $('roPath').textContent = p.length > 1 ? p.slice(0, -1).join(' › ') : 'core feeling';
+    $('roPath').textContent = p.length > 1 ? p.slice(0, -1).join(' › ') : 'family of feelings';
     $('roDot').style.background = s.node.color;
     if (spinning && navigator.vibrate) navigator.vibrate(4);
-  }
-
-  function applyRot(force) {
-    rotG.setAttribute('transform', `rotate(${rot})`);
-    for (const s of segs) {
-      const f = mod(s.mid + rot, 360) > 180;
-      if (force || f !== s.flip) {
-        s.flip = f;
-        s.t.setAttribute('transform', `rotate(${s.mid - 90}) translate(${s.rm} 0)${f ? ' rotate(180)' : ''}`);
-      }
-    }
-    const i = pick();
-    if (i !== current) setCurrent(i);
   }
 
   // ---------- Motion ----------
   let raf = null;
   const stop = () => { if (raf) cancelAnimationFrame(raf); raf = null; spinning = false; };
   const easeOut = t => 1 - Math.pow(1 - t, 3);
+  const easeInOut = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
   function tween(ms, step, done) {
     stop();
@@ -356,7 +422,7 @@
   function snapTo(s, then) {
     if (!s) return;
     const from = rot, to = rot + norm(-s.mid - rot);
-    tween(520, k => { rot = from + (to - from) * k; applyRot(); }, () => {
+    tween(560, k => { rot = from + (to - from) * k; draw(); }, () => {
       spinning = false;
       if (navigator.vibrate) navigator.vibrate(12);
       const ro = $('readout'); ro.classList.remove('landed'); void ro.offsetWidth; ro.classList.add('landed');
@@ -372,7 +438,7 @@
       const dt = Math.min(48, now - last); last = now;
       rot += vel * dt;
       vel *= Math.pow(0.985, dt / 16);
-      applyRot();
+      draw();
       if (Math.abs(vel) > 0.025) raf = requestAnimationFrame(f);
       else { raf = null; snapTo(segs[pick()]); }
     };
@@ -386,11 +452,45 @@
       focus = node;
       rot = 0;
       build();
-      const first = segs.filter(s => s.ring === Math.max(...segs.map(x => x.ring)))[0];
-      rot = -first.mid; applyRot(true);
+      const first = segs.find(s => s.ring === maxRing);
+      rot = -first.mid; draw();
       const inScale = dir === 'in' ? 0.86 : 1.14;
       tween(260, k => { zoomG.setAttribute('transform', `scale(${inScale + (1 - inScale) * k})`); zoomG.style.opacity = k; });
     });
+  }
+
+  // ---------- Three breaths before the first spin ----------
+  let breathing = false, bRaf = null;
+  const IN = 4000, OUT = 6000, CYC = IN + OUT, N = 3;
+  function startBreath() {
+    breathing = true;
+    const t0 = performance.now(); let last = t0;
+    $('prompt').textContent = 'Three slow breaths first';
+    $('hint').innerHTML = '<button class="linkish" id="skipBreath">Skip</button>';
+    $('skipBreath').addEventListener('click', () => endBreath());
+    $('hubMain').setAttribute('font-size', 22);
+    const f = now => {
+      if (!breathing) return;
+      const t = now - t0, dt = now - last; last = now;
+      if (t >= CYC * N) return endBreath();
+      const c = t % CYC, inhale = c < IN;
+      const b = inhale ? easeInOut(c / IN) : 1 - easeInOut((c - IN) / OUT);
+      zoomG.setAttribute('transform', `scale(${(0.84 + 0.16 * b).toFixed(4)})`);
+      $('hubMain').textContent = inhale ? 'Breathe in' : 'Breathe out';
+      $('hubSub').textContent = `${Math.floor(t / CYC) + 1} of ${N}`;
+      rot += 0.004 * dt; draw();
+      bRaf = requestAnimationFrame(f);
+    };
+    bRaf = requestAnimationFrame(f);
+  }
+  function endBreath(silent) {
+    if (!breathing) return;
+    breathing = false; cancelAnimationFrame(bRaf);
+    const m = (zoomG.getAttribute('transform') || 'scale(1)').match(/[\d.]+/);
+    const s0 = m ? +m[0] : 1;
+    updateHub();
+    if (!silent) tween(400, k => { zoomG.setAttribute('transform', `scale(${s0 + (1 - s0) * k})`); draw(); }, () => snapTo(segs[pick()]));
+    else zoomG.setAttribute('transform', 'scale(1)');
   }
 
   // ---------- Pointer input ----------
@@ -399,6 +499,7 @@
   const angleOf = (e, c) => Math.atan2(e.clientX - c[0], -(e.clientY - c[1])) * 180 / Math.PI;
 
   svg.addEventListener('pointerdown', e => {
+    if (breathing) endBreath(true);
     stop();
     const c = centre();
     drag = { c, last: angleOf(e, c), t: performance.now(), t0: performance.now(), x: e.clientX, y: e.clientY, moved: 0, vel: 0, target: e.target };
@@ -412,14 +513,13 @@
     if (r < drag.c[2] * 0.06) { drag.last = a; return; }
     const now = performance.now(), dt = Math.max(1, now - drag.t);
     const d = norm(a - drag.last);
-    if (drag.moved > 6) { rot += d; spinning = true; applyRot(); }
+    if (drag.moved > 6) { rot += d; spinning = true; draw(); }
     drag.vel = 0.6 * (d / dt) + 0.4 * drag.vel;
     drag.last = a; drag.t = now;
   });
-  const end = e => {
+  const end = () => {
     if (!drag) return;
-    const now = performance.now();
-    const d = drag; drag = null;
+    const now = performance.now(), d = drag; drag = null;
     if (d.moved < 8 && now - d.t0 < 450) { spinning = false; return tap(d.target); }
     const v = now - d.t > 90 ? 0 : Math.max(-2.2, Math.min(2.2, d.vel));
     if (Math.abs(v) > 0.05) coast(v); else snapTo(segs[pick()]);
@@ -436,41 +536,37 @@
     else snapTo(s, () => openLog(s.node));
   }
 
-  function spin() { coast((Math.random() < .5 ? -1 : 1) * (0.9 + Math.random() * 0.8)); }
+  function spin() { if (breathing) endBreath(true); coast((Math.random() < .5 ? -1 : 1) * (0.9 + Math.random() * 0.8)); }
 
-  // keyboard
   svg.addEventListener('keydown', e => {
-    const maxRing = Math.max(...segs.map(x => x.ring));
+    if (breathing) endBreath(true);
     const outer = segs.filter(s => s.ring === maxRing);
     const cur = segs[current];
-    const idx = outer.findIndex(s => cur && (s === cur));
+    const idx = outer.indexOf(cur);
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault();
-      // pointer moves clockwise over the slices when the wheel turns anticlockwise
-      const n = outer[mod(idx + (e.key === 'ArrowRight' ? 1 : -1), outer.length)];
-      snapTo(n);
+      snapTo(outer[mod(idx + (e.key === 'ArrowRight' ? 1 : -1), outer.length)]);
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       if (cur && cur.node.children) zoomTo(cur.node, 'in'); else if (cur) openLog(cur.node);
-    } else if (e.key === 'Escape' || e.key === 'Backspace') {
-      if (focus !== ROOT) zoomTo(focus.parent, 'out');
-    }
+    } else if ((e.key === 'Escape' || e.key === 'Backspace') && focus !== ROOT) zoomTo(focus.parent, 'out');
   });
 
   $('spinBtn').addEventListener('click', spin);
-  $('logBtn').addEventListener('click', () => { const s = segs[current]; if (s) openLog(s.node); });
+  $('logBtn').addEventListener('click', () => { if (breathing) endBreath(true); const s = segs[current]; if (s) openLog(s.node); });
 
-  // ---------- Storage ----------
+  // ---------- Storage (this browser only) ----------
   const KEY = 'ifeel.entries.v1';
   let memory = [];
   const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return memory; } };
   const store = list => { memory = list; try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {} };
+  const updateEntry = (t, patch) => { const list = load(); const x = list.find(e => e.t === t); if (x) { Object.assign(x, patch); store(list); } };
 
   // ---------- Sheets ----------
   const scrim = $('scrim');
-  let openSheet = null, chosen = null, level = 3;
-  function show(sheet) { openSheet = sheet; sheet.classList.add('show'); scrim.classList.add('show'); }
-  function hide() { if (openSheet) openSheet.classList.remove('show'); scrim.classList.remove('show'); openSheet = null; svg.focus({ preventScroll: true }); }
+  let openSheet = null, chosen = null, level = 3, zonesOn = new Set(), afterTimer = null;
+  function show(sheet) { if (openSheet) openSheet.classList.remove('show'); openSheet = sheet; sheet.classList.add('show'); scrim.classList.add('show'); }
+  function hide() { if (afterTimer) { cancelAnimationFrame(afterTimer); afterTimer = null; } if (openSheet) openSheet.classList.remove('show'); scrim.classList.remove('show'); openSheet = null; svg.focus({ preventScroll: true }); }
   scrim.addEventListener('click', hide);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && openSheet) { e.stopPropagation(); hide(); } }, true);
 
@@ -483,28 +579,106 @@
   }
   const paintLevels = () => [...levelsEl.children].forEach((b, i) => b.setAttribute('aria-pressed', i + 1 === level));
 
+  const ZONES = ['Head', 'Jaw and throat', 'Shoulders', 'Chest', 'Stomach', 'Arms and hands', 'Legs'];
+  const zonesEl = $('zones');
+  ZONES.forEach(z => {
+    const b = document.createElement('button'); b.textContent = z; b.dataset.z = z;
+    b.addEventListener('click', () => toggleZone(z)); zonesEl.append(b);
+  });
+  $('bodySvg').addEventListener('click', e => { const z = e.target.getAttribute('data-zone'); if (z) toggleZone(z); });
+  function toggleZone(z) { zonesOn.has(z) ? zonesOn.delete(z) : zonesOn.add(z); paintZones(); }
+  function paintZones() {
+    [...zonesEl.children].forEach(b => b.setAttribute('aria-pressed', zonesOn.has(b.dataset.z)));
+    document.querySelectorAll('#bodySvg [data-zone]').forEach(s => s.style.fill = zonesOn.has(s.getAttribute('data-zone')) ? chosen.color : '');
+  }
+
   function openLog(node) {
-    chosen = node; level = 3; paintLevels();
+    chosen = node; level = 3; zonesOn = new Set(); paintLevels(); paintZones();
     $('logWord').textContent = node.name;
     $('logDot').style.background = node.color;
     const p = pathOf(node);
-    $('logPath').textContent = p.length > 1 ? p.join(' › ') : 'Core feeling';
+    $('logPath').textContent = p.length > 1 ? p.join(' › ') : 'A family of feelings. You can also tap it to find a more exact word.';
     $('note').value = '';
     show($('logSheet'));
   }
   $('cancelLog').addEventListener('click', hide);
   $('saveLog').addEventListener('click', () => {
-    const list = load();
-    list.unshift({ t: Date.now(), name: chosen.name, path: pathOf(chosen), color: chosen.color, core: coreOf(chosen).name, level, note: $('note').value.trim() });
-    store(list);
-    hide();
-    toast('Noted. Thanks for checking in.');
-    if (focus !== ROOT) setTimeout(() => zoomTo(ROOT, 'out'), 350);
+    const entry = { t: Date.now(), name: chosen.name, path: pathOf(chosen), color: chosen.color, core: coreOf(chosen).name, tone: chosen.tone, level, zones: [...zonesOn], note: $('note').value.trim() };
+    const list = load(); list.unshift(entry); store(list);
+    openAfter(entry);
   });
+
+  // ---------- After saving: savor, or one small step ----------
+  const ringSvg = () => `<svg viewBox="-60 -60 120 120"><circle r="50" fill="none" stroke="#E4E7EE" stroke-width="8"/><circle id="ring" r="50" fill="none" stroke="${chosen.color}" stroke-width="8" stroke-linecap="round" transform="rotate(-90)" stroke-dasharray="314.16" stroke-dashoffset="314.16"/><circle id="orb" r="20" fill="${chosen.color}" opacity=".35"/></svg>`;
+
+  function openAfter(entry) {
+    const body = $('afterBody');
+    if (entry.tone === 'pleasant' || entry.tone === 'mixed') {
+      $('afterTitle').textContent = 'Savor this moment';
+      $('afterSub').textContent = `Stay with feeling ${entry.name.toLowerCase()} for twenty seconds. Notice where it sits in your body, and let it fill a little more space.`;
+      body.innerHTML = `<div class="stage">${ringSvg()}<div class="big" id="stageText">Ready when you are</div><button class="btn primary" id="goSavor">Begin</button></div>`;
+      $('goSavor').addEventListener('click', e => {
+        e.target.remove();
+        runTimer(20000, (k, left) => {
+          $('ring').setAttribute('stroke-dashoffset', (314.16 * (1 - k)).toFixed(1));
+          $('orb').setAttribute('r', (20 + 22 * k).toFixed(1));
+          $('stageText').textContent = `${Math.ceil(left / 1000)} seconds`;
+        }, () => { $('stageText').textContent = 'Keep it with you.'; updateEntry(entry.t, { savored: true }); });
+      });
+    } else {
+      $('afterTitle').textContent = 'Something small, if you like';
+      $('afterSub').textContent = 'Naming it was the first step. Pick one, or just close this.';
+      body.innerHTML = `<div class="options">
+        <button class="opt" data-o="breath"><strong>One slow breath</strong><span>Ten seconds, in and out.</span></button>
+        <button class="opt" data-o="tell"><strong>Tell someone</strong><span>A short message is enough.</span></button>
+        <button class="opt" data-o="ok"><strong>One thing that's still OK</strong><span>However small.</span></button>
+      </div>`;
+      body.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => smallStep(b.dataset.o, entry)));
+    }
+    show($('afterSheet'));
+  }
+
+  function smallStep(kind, entry) {
+    const body = $('afterBody');
+    if (kind === 'breath') {
+      body.innerHTML = `<div class="stage">${ringSvg()}<div class="big" id="stageText">Breathe in</div></div>`;
+      runTimer(10000, k => {
+        const inhale = k < .4, b = inhale ? easeInOut(k / .4) : 1 - easeInOut((k - .4) / .6);
+        $('orb').setAttribute('r', (16 + 30 * b).toFixed(1));
+        $('ring').setAttribute('stroke-dashoffset', (314.16 * (1 - k)).toFixed(1));
+        $('stageText').textContent = inhale ? 'Breathe in' : 'Breathe out';
+      }, () => { $('stageText').textContent = 'Good.'; });
+    } else if (kind === 'tell') {
+      const msg = `Having a ${entry.name.toLowerCase()} kind of day. Could we talk later?`;
+      body.innerHTML = `<p class="sub">Who would you like to know? Something like:</p><div class="msg" id="msgText"></div><div class="row"><button class="btn ghost" id="copyMsg">Copy message</button></div>`;
+      $('msgText').textContent = msg;
+      $('copyMsg').addEventListener('click', async e => {
+        try { await navigator.clipboard.writeText(msg); e.target.textContent = 'Copied'; } catch (err) { e.target.textContent = 'Select the text to copy it'; }
+      });
+    } else {
+      body.innerHTML = `<p class="sub">Right now, even with this, something is still OK. What is it?</p><input type="text" id="okText" placeholder="The coffee was good"><div class="row"><button class="btn primary" id="okSave">Keep it</button></div>`;
+      $('okSave').addEventListener('click', () => { const v = $('okText').value.trim(); if (v) updateEntry(entry.t, { ok: v }); hide(); toast('Kept. Thanks for checking in.'); backToRoot(); });
+      $('okText').focus();
+    }
+  }
+
+  function runTimer(ms, step, done) {
+    const t0 = performance.now();
+    const f = now => {
+      const k = Math.min(1, (now - t0) / ms);
+      step(k, ms - (now - t0));
+      if (k < 1) afterTimer = requestAnimationFrame(f); else { afterTimer = null; done(); }
+    };
+    afterTimer = requestAnimationFrame(f);
+  }
+
+  const backToRoot = () => { if (focus !== ROOT) setTimeout(() => zoomTo(ROOT, 'out'), 350); };
+  $('afterDone').addEventListener('click', () => { hide(); toast('Noted. Thanks for checking in.'); backToRoot(); });
 
   function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
 
-  $('journalBtn').addEventListener('click', () => { renderJournal(); show($('journalSheet')); });
+  // ---------- Journal ----------
+  $('journalBtn').addEventListener('click', () => { if (breathing) endBreath(true); renderJournal(); show($('journalSheet')); });
   $('closeJournal').addEventListener('click', hide);
 
   function renderJournal() {
@@ -529,20 +703,24 @@
       const li = document.createElement('li');
       const dot = document.createElement('span'); dot.className = 'd'; dot.style.background = x.color;
       const mid = document.createElement('div');
-      const w = document.createElement('div'); w.className = 'w'; w.textContent = x.name;
-      const p = document.createElement('div'); p.className = 'p'; p.textContent = `${x.path.join(' › ')} · strength ${x.level}/5`;
+      const w = document.createElement('div'); w.className = 'w'; w.textContent = x.name + (x.savored ? ' · savored' : '');
+      const p = document.createElement('div'); p.className = 'p';
+      p.textContent = [x.path.join(' › '), `strength ${x.level}/5`, (x.zones || []).join(', ')].filter(Boolean).join(' · ');
       mid.append(w, p);
       if (x.note) { const n = document.createElement('div'); n.className = 'n'; n.textContent = x.note; mid.append(n); }
+      if (x.ok) { const n = document.createElement('div'); n.className = 'n'; n.textContent = `Still OK: ${x.ok}`; mid.append(n); }
       const t = document.createElement('div'); t.className = 't';
       t.textContent = new Date(x.t).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
       li.append(dot, mid, t); ul.append(li);
     }
   }
 
-  // ---------- Start ----------
+  // ---------- Start: land on Peaceful › Calm, then three breaths ----------
   build();
-  rot = -segs.find(s => s.ring === 1).mid; applyRot(true);
-})();
+  const calm = segs.find(s => s.node.name === 'Calm');
+  rot = -calm.mid; draw();
+  startBreath();
+}
 </script>
 </body>
 </html>
