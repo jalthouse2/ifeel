@@ -49,13 +49,13 @@
   main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; display: flex; flex-direction: column; align-items: center; }
   h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; margin: 6px 0 10px; text-align: center; color: var(--ink-soft); min-height: 1.3em; }
 
-  .wheelwrap { position: relative; width: min(94vw, calc(100dvh - 410px), 620px); min-width: 280px; aspect-ratio: 1; }
-  #wheel { width: 100%; height: 100%; display: block; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+  .wheelwrap { position: relative; width: min(96vw, calc(100dvh - 400px), 600px); min-width: 280px; aspect-ratio: 1; margin-top: 26px; }
+  #wheel { width: 100%; height: 100%; display: block; overflow: visible; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
   #wheel:active { cursor: grabbing; }
   #wheel:focus { outline: none; }
   #wheel:focus-visible .hub { stroke: var(--accent); stroke-width: 6; }
   .pointer {
-    position: absolute; left: 50%; top: -6px; transform: translateX(-50%);
+    position: absolute; left: 50%; top: -30px; transform: translateX(-50%);
     width: 0; height: 0; z-index: 2; pointer-events: none;
     border-left: 13px solid transparent; border-right: 13px solid transparent;
     border-top: 22px solid var(--ink);
@@ -70,6 +70,11 @@
   #centerG { cursor: pointer; }
   #centerG text { text-anchor: middle; dominant-baseline: central; font-family: "Manrope", system-ui, sans-serif; pointer-events: none; fill: var(--ink); }
 
+  .hdr-right { display: flex; align-items: center; gap: 10px; }
+  .rings { display: flex; align-items: center; gap: 4px; background: var(--panel); border-radius: 999px; padding: 3px 4px 3px 12px; box-shadow: inset 0 0 0 1px var(--line); }
+  .rings span { font-size: 15px; font-weight: 600; color: var(--ink-soft); margin-right: 4px; }
+  .rings button { width: 38px; height: 38px; border: 0; border-radius: 50%; background: none; font-size: 16px; font-weight: 700; }
+  .rings button[aria-pressed="true"] { background: var(--accent); color: #fff; }
   .readout { display: flex; align-items: center; gap: 14px; min-height: 76px; margin-top: 10px; }
   .readout .dot { width: 22px; height: 22px; border-radius: 50%; flex: none; box-shadow: 0 0 0 3px rgba(255,255,255,.9); transition: background .3s; }
   .readout .path { font-size: 16px; color: var(--ink-soft); font-weight: 500; }
@@ -151,7 +156,10 @@
 <body>
 <header>
   <div class="brand">i<span>Feel</span></div>
-  <button id="journalBtn" class="btn ghost" style="padding:10px 18px;font-size:16px">Journal</button>
+  <div class="hdr-right">
+    <div class="rings" role="group" aria-label="Number of rings shown"><span>Rings</span><button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button></div>
+    <button id="journalBtn" class="btn ghost" style="padding:10px 18px;font-size:16px">Journal</button>
+  </div>
 </header>
 
 <main>
@@ -485,6 +493,17 @@
   const mix = (h, t) => rgbToHex(hexToRgb(h).map(v => v + (255 - v) * t));
   const lum = h => { const [r,g,b] = hexToRgb(h).map(v => { v /= 255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); }); return .2126*r + .7152*g + .0722*b; };
   const DARK = '#26324A';
+  // A brighter, more saturated version of a colour, for the slice you are on.
+  function brighten(h) {
+    let [r, g, b] = hexToRgb(h).map(v => v / 255);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b); let hh = 0, ss = 0, l = (mx + mn) / 2;
+    if (mx !== mn) { const d = mx - mn; ss = l > .5 ? d / (2 - mx - mn) : d / (mx + mn);
+      hh = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; hh /= 6; }
+    ss = Math.min(1, ss * 1.45 + .1); l = Math.min(.72, l + .06);
+    const q = l < .5 ? l * (1 + ss) : l + ss - l * ss, pp = 2 * l - q;
+    const f = t => { t = (t + 1) % 1; return t < 1/6 ? pp + (q - pp) * 6 * t : t < .5 ? q : t < 2/3 ? pp + (q - pp) * (2/3 - t) * 6 : pp; };
+    return [f(hh + 1/3), f(hh), f(hh - 1/3)].map(v => v * 255);
+  }
   const contrast = (a, b) => { const la = lum(a), lb = lum(b); return (Math.max(la, lb) + .05) / (Math.min(la, lb) + .05); };
   const darken = (h, t) => rgbToHex(hexToRgb(h).map(v => v * (1 - t)));
   // One text colour per family: white, unless the family's own colour is too light for it (Joyful).
@@ -522,7 +541,9 @@
 
   // ---------- Geometry ----------
   const NS = 'http://www.w3.org/2000/svg';
-  const R0 = 92, R1 = 256, R2 = 452, BUMP = 40;
+  const RADII = { 1: [88, 468], 2: [88, 248, 468], 3: [88, 192, 314, 468] }, BUMP = 78;
+  let layers = 2;
+  try { const v = +localStorage.getItem('ifeel.rings'); if (v >= 1 && v <= 3) layers = v; } catch (e) {}
   const mod = (a, m) => ((a % m) + m) % m;
   const norm = a => mod(a + 180, 360) - 180;
   const pt = (r, a) => { const t = a * Math.PI / 180; return [r * Math.sin(t), -r * Math.cos(t)]; };
@@ -542,40 +563,40 @@
   const fish = d => { const n = Math.round(d / 360), r = d - 360 * n, x = r / 180; return 180 * (K + 1) * x / (K * Math.abs(x) + 1) + 360 * n; };
 
   function layout(node) {
-    const out = [], kids = node.children, two = kids.some(k => k.children);
-    const rings = two ? [[R0, R1], [R1, R2]] : [[R0, R2]];
-    let spans;
-    if (node === ROOT) {
-      const P = kids.filter(k => k.tone === 'pleasant').reduce((a, k) => a + k.leaves, 0);
-      const U = kids.filter(k => k.tone !== 'pleasant').reduce((a, k) => a + k.leaves, 0);
-      spans = kids.map(k => 180 * k.leaves / (k.tone === 'pleasant' ? P : U));
-    } else spans = kids.map(k => 360 * k.leaves / node.leaves);
-    let a = 0;
-    kids.forEach((k, i) => {
-      const span = spans[i];
-      out.push({ node: k, a0: a, a1: a + span, r0: rings[0][0], r1: rings[0][1], ring: 0, two });
-      if (two && k.children) {
-        let b = a;
-        for (const g of k.children) { const s = span * g.leaves / k.leaves; out.push({ node: g, a0: b, a1: b + s, r0: rings[1][0], r1: rings[1][1], ring: 1, two }); b += s; }
-      }
-      a += span;
-    });
+    const out = [], n = Math.min(layers, 3 - node.depth), radii = RADII[n];
+    (function place(parent, a0, span, ring) {
+      const kids = parent.children;
+      let spans;
+      if (parent === ROOT) {
+        const P = kids.filter(k => k.tone === 'pleasant').reduce((a, k) => a + k.leaves, 0);
+        const U = kids.filter(k => k.tone !== 'pleasant').reduce((a, k) => a + k.leaves, 0);
+        spans = kids.map(k => 180 * k.leaves / (k.tone === 'pleasant' ? P : U));
+      } else spans = kids.map(k => span * k.leaves / parent.leaves);
+      let a = a0;
+      kids.forEach((k, i) => {
+        out.push({ node: k, a0: a, a1: a + spans[i], r0: radii[ring], r1: radii[ring + 1], ring, n });
+        if (ring + 1 < n && k.children) place(k, a, spans[i], ring + 1);
+        a += spans[i];
+      });
+    })(node, 0, 360, 0);
     return out;
   }
 
-  const baseFont = s => !s.two ? 42 : focus === ROOT ? (s.ring === 0 ? 34 : 26) : (s.ring === 0 ? 30 : 28);
+  const FONTS = { 1: [48], 2: [40, 32], 3: [30, 28, 29] };
+  const baseFont = s => FONTS[s.n][s.ring] + (s.n === 2 && focus !== ROOT && s.ring === 0 ? -4 : 0);
 
   function build() {
     segs = layout(focus);
     maxRing = Math.max(...segs.map(s => s.ring));
     const outer = segs.filter(s => s.ring === maxRing).length;
-    K = outer >= 30 ? 0.85 : outer >= 10 ? 0.6 : 0.15;
-    W = Math.max(8, 360 / outer * 2.2);
+    K = outer >= 100 ? 1.25 : outer >= 30 ? 0.95 : outer >= 10 ? 0.6 : 0.15;
+    W = Math.max(7, 360 / outer * 1.8);
     segG.textContent = '';
     segs.forEach((s, i) => {
       s.mid = (s.a0 + s.a1) / 2;
       const g = el('g', { class: 'seg', 'data-i': i });
       s.p = el('path', { fill: s.node.color });
+      s.rgb = hexToRgb(s.node.color); s.brgb = brighten(s.node.color);
       s.t = el('text', { fill: s.node.ink });
       s.t.textContent = s.node.name;
       g.append(s.p, s.t); segG.append(g); s.g = g;
@@ -588,24 +609,27 @@
 
   function draw() {
     const p = mod(-rot, 360);
+    const ci = pick(), onPath = new Set();
+    for (let x = segs[ci]; x; x = x.parentSeg) onPath.add(x);
     for (const s of segs) {
       const d0 = norm(s.a0 - p), d1 = d0 + (s.a1 - s.a0), dm = (d0 + d1) / 2;
       const e = Math.exp(-((dm / W) ** 2));
       const D0 = fish(d0), D1 = fish(d1), Dm = (D0 + D1) / 2;
-      const r1 = s.r1 + (s.ring === maxRing ? BUMP * e : 0);
+      const r1 = s.r1 + (s.ring === maxRing ? BUMP * e : onPath.has(s) ? 10 : 0);
       s.p.setAttribute('d', arcPath(s.r0, r1, D0, D1));
+      const glow = Math.max(s.ring === maxRing ? e : 0, onPath.has(s) ? .75 : 0);
+      s.p.setAttribute('fill', rgbToHex(s.rgb.map((v, j) => v + (s.brgb[j] - v) * glow)));
       const rm = (s.r0 + r1) / 2;
       const arcW = (D1 - D0) * Math.PI / 180 * rm;
-      const radial = r1 - s.r0 - 20;
-      const fs = Math.min(baseFont(s) * (1 + .28 * e), arcW * 0.72, radial / (s.node.name.length * 0.6));
+      const radial = r1 - s.r0 - 18;
+      const fs = Math.min(baseFont(s) * (1 + .55 * e), arcW * 0.8, radial / (s.node.name.length * 0.6));
       if (fs < 14) { s.t.setAttribute('visibility', 'hidden'); continue; }
       const flip = mod(Dm, 360) > 180;
       s.t.setAttribute('visibility', 'visible');
       s.t.setAttribute('font-size', fs.toFixed(1));
       s.t.setAttribute('transform', `rotate(${(Dm - 90).toFixed(2)}) translate(${rm.toFixed(1)} 0)${flip ? ' rotate(180)' : ''}`);
     }
-    const i = pick();
-    if (i !== current) setCurrent(i);
+    if (ci !== current) setCurrent(ci);
   }
 
   function updateHub() {
@@ -807,6 +831,13 @@
     } else if ((e.key === 'Escape' || e.key === 'Backspace') && focus !== ROOT) zoomTo(focus.parent, 'out');
   });
 
+  function paintRings() { document.querySelectorAll('.rings button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.n === layers)); }
+  document.querySelectorAll('.rings button').forEach(b => b.addEventListener('click', () => {
+    if (breathing) endBreath(true);
+    layers = +b.dataset.n; paintRings();
+    try { localStorage.setItem('ifeel.rings', layers); } catch (e) {}
+    const keep = rot; build(); rot = keep; draw(); snapTo(segs[pick()]);
+  }));
   $('spinBtn').addEventListener('click', spin);
   $('logBtn').addEventListener('click', () => { if (breathing) endBreath(true); const s = segs[current]; if (s) openLog(s.node); });
 
@@ -972,8 +1003,9 @@
 
   // ---------- Start: land on Peaceful › Calm, then three breaths ----------
   build();
-  const calm = segs.find(s => s.node.name === 'Calm');
+  const calm = segs.find(s => s.node.name === 'Calm') || segs.find(s => s.node.name === 'Peaceful');
   rot = -calm.mid; draw();
+  paintRings();
   startBreath();
 }
 </script>
