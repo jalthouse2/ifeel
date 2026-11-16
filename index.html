@@ -49,7 +49,7 @@
   main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; display: flex; flex-direction: column; align-items: center; }
   h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; margin: 6px 0 10px; text-align: center; color: var(--ink-soft); min-height: 1.3em; }
 
-  .wheelwrap { position: relative; width: min(94vw, calc(100dvh - 300px), 620px); min-width: 280px; aspect-ratio: 1; }
+  .wheelwrap { position: relative; width: min(94vw, calc(100dvh - 410px), 620px); min-width: 280px; aspect-ratio: 1; }
   #wheel { width: 100%; height: 100%; display: block; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
   #wheel:active { cursor: grabbing; }
   #wheel:focus { outline: none; }
@@ -77,6 +77,11 @@
   .readout.landed .word { animation: settle .6s ease; }
   @keyframes settle { 0% { transform: scale(.94); opacity: .5 } 100% { transform: none; opacity: 1 } }
 
+  .about { max-width: 470px; text-align: center; min-height: 96px; margin: 0 0 6px; padding: 0 8px; }
+  .def { font-size: 18px; line-height: 1.45; margin: 0 0 6px; }
+  .rel { font-size: 15px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+  .rel b { color: var(--ink); font-weight: 600; white-space: nowrap; }
+  .rel i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
   .actions { display: flex; gap: 12px; margin-top: 6px; }
   .btn { border: 0; border-radius: 999px; padding: 14px 26px; font-size: 18px; font-weight: 600; min-height: 48px; }
   .btn.primary { background: var(--accent); color: #fff; }
@@ -167,6 +172,7 @@
     <span class="dot" id="roDot"></span>
     <div><div class="path" id="roPath"></div><div class="word" id="roWord"></div></div>
   </div>
+  <div class="about" aria-live="polite"><p class="def" id="def"></p><p class="rel" id="rel"></p></div>
   <div class="actions">
     <button class="btn ghost" id="spinBtn">Spin</button>
     <button class="btn primary" id="logBtn">That's it</button>
@@ -257,21 +263,251 @@
       Moved: ['Touched','Overcome'], Excited: ['Eager','Energetic'] } }
   ];
 
+  // ---------- What each feeling means, and how it relates to the others ----------
+  // d: definition. m: a blend, after Plutchik's wheel where he names one. n: a note. o: its opposite.
+  const ABOUT = {
+    Joyful: { d: 'Lightness and pleasure in what is happening.', o: 'Sad' },
+    Powerful: { d: 'Feeling capable, worthy and able to act.', o: 'Weak' },
+    Peaceful: { d: 'Settled and at ease, with nothing pulling at you.', o: 'Stressed' },
+    Sad: { d: 'A heavy feeling of loss, or of missing something.', o: 'Joyful' },
+    Disgusted: { d: 'Wanting to pull away from something that feels wrong or offensive.', o: 'Trusting' },
+    Angry: { d: 'Heat and push against something that feels unfair or in the way.', o: 'Fearful' },
+    Fearful: { d: 'Alarm that something bad could happen to you.', o: 'Angry', n: 'Fear pulls you back; anger pushes you forward, which is why they sit opposite each other.' },
+    Bad: { d: 'Low or worn down, without one sharp feeling.', n: 'Often a mix of tiredness and stress rather than a single emotion.' },
+    Surprised: { d: 'Caught by the unexpected, for better or worse.', o: 'Interested', n: 'It quickly turns into something else: delight, fear, disappointment.' },
+
+    Playful: { d: 'In the mood to joke, tease and have fun.' },
+    Cheeky: { d: 'Playfully bold, a little irreverent.' },
+    Amused: { d: 'Finding something funny.' },
+    Aroused: { d: 'Physically or sexually stirred.' },
+    Cheerful: { d: 'Bright and good-humoured.' },
+    Delighted: { d: 'Very pleased, often by something you did not expect.', m: ['Joyful', 'Surprised'] },
+    Jovial: { d: 'Warm, sociable good humour.' },
+    Pleased: { d: 'Quietly satisfied with how something went.' },
+    Elated: { d: 'Lifted up, high on good news.' },
+    Ecstatic: { d: 'Overwhelming joy.', n: 'The strongest form of joy; serene is the mildest.' },
+    Triumphant: { d: 'The joy of having won or overcome something.', m: ['Joyful', 'Powerful'] },
+    Interested: { d: 'Attention drawn toward something, wanting more of it.', n: 'Plutchik calls this anticipation; it sits opposite surprise.' },
+    Curious: { d: 'Wanting to know or explore.', m: ['Trusting', 'Surprised'] },
+    Inquisitive: { d: 'Asking questions, actively digging in.' },
+    Fascinated: { d: 'Absorbed, hard to look away.' },
+    Optimistic: { d: 'Expecting things to turn out well.', m: ['Joyful', 'Interested'] },
+    Hopeful: { d: 'Wishing for something good and believing it could come.', m: ['Interested', 'Trusting'], o: 'Hopeless' },
+    Inspired: { d: 'Moved to make or do something by what you saw or felt.' },
+    Encouraged: { d: 'Given more heart to keep going.', o: 'Discouraged' },
+    Enthusiastic: { d: 'Eager, energetic interest in something.' },
+    Passionate: { d: 'Strong, driving feeling for something or someone.' },
+    Motivated: { d: 'Wanting to act, and having the push to do it.' },
+    Energized: { d: 'Full of energy you can use.' },
+
+    Proud: { d: 'Pleased with something you did or are.', m: ['Joyful', 'Angry'], n: 'In Plutchik’s model, pride is joy with a little of anger’s push.' },
+    Successful: { d: 'Having reached what you aimed for.' },
+    Confident: { d: 'Trusting your own ability.', o: 'Insecure' },
+    Satisfied: { d: 'Needs met; nothing more needed for now.' },
+    Accepted: { d: 'Welcomed as you are.', o: 'Rejected' },
+    Respected: { d: 'Treated as someone whose view counts.', o: 'Disrespected' },
+    Valued: { d: 'Seen as worth something to others.' },
+    Appreciated: { d: 'Recognised and thanked for what you give.' },
+    Courageous: { d: 'Acting even though you are afraid.', m: ['Fearful', 'Powerful'], n: 'Courage is not the absence of fear; it is fear plus strength.' },
+    Daring: { d: 'Willing to take a bold risk.' },
+    'Self-assured': { d: 'Calmly sure of yourself.' },
+    Creative: { d: 'Making or imagining something new.' },
+    Imaginative: { d: 'A mind full of new pictures and possibilities.' },
+    Stimulated: { d: 'Mentally switched on and engaged.' },
+    Resilient: { d: 'Able to bend and recover.' },
+    Strong: { d: 'Sturdy enough to carry what comes.', o: 'Weak' },
+    Faithful: { d: 'Steady in loyalty or belief.' },
+    Important: { d: 'Feeling that you matter.', o: 'Insignificant' },
+    Worthwhile: { d: 'Feeling your time or effort is worth it.' },
+    Valuable: { d: 'Feeling you have something real to offer.', o: 'Worthless' },
+    Aware: { d: 'Clear and present, noticing what is going on.' },
+    Awakened: { d: 'Seeing something freshly, as if for the first time.' },
+    Authentic: { d: 'Being true to yourself rather than performing.' },
+
+    Content: { d: 'Happy enough with things as they are.' },
+    Free: { d: 'Unconstrained; nothing holding you back.' },
+    Relieved: { d: 'A weight lifted after worry or strain.', n: 'What fear or stress often turns into once it passes.' },
+    Calm: { d: 'Quiet and steady inside.', o: 'Agitated' },
+    Relaxed: { d: 'Body and mind loosened, without tension.' },
+    Serene: { d: 'Deep, clear calm.', n: 'Plutchik’s mildest form of joy.' },
+    Chilled: { d: 'Easy-going and unbothered.' },
+    Trusting: { d: 'Able to rely on someone or something.', o: 'Disgusted', n: 'Trust and disgust are opposites: one moves toward, the other away.' },
+    Safe: { d: 'Protected, with no threat nearby.', o: 'Threatened' },
+    Receptive: { d: 'Open to what others offer or say.' },
+    Sensitive: { d: 'Tuned in, easily touched by others.' },
+    Loving: { d: 'Warmth and care for someone.', m: ['Joyful', 'Trusting'] },
+    Intimate: { d: 'Close and open with someone.' },
+    Nurturing: { d: 'Wanting to care for something and help it grow.' },
+    Generous: { d: 'Wanting to give freely.' },
+    Thankful: { d: 'Aware of something good you received.' },
+    Grateful: { d: 'Warm appreciation for what you have or were given.' },
+    Appreciative: { d: 'Noticing and valuing the good in something.' },
+    Blessed: { d: 'Lucky beyond what you feel you earned.' },
+    Thoughtful: { d: 'Reflective, turning things over carefully.' },
+    Pensive: { d: 'Quietly lost in thought, sometimes wistful.', m: ['Thoughtful', 'Sad'], n: 'Plutchik places pensiveness as the mildest sadness.' },
+    Admiring: { d: 'Looking up to someone or something.', n: 'Admiration is trust at its strongest.' },
+
+    Lonely: { d: 'Wanting connection and not having it.' },
+    Isolated: { d: 'Cut off from others.' },
+    Abandoned: { d: 'Left behind by someone you relied on.' },
+    Neglected: { d: 'Not looked after or paid attention to.' },
+    Vulnerable: { d: 'Exposed and easily hurt.' },
+    Victimized: { d: 'Harmed unfairly by someone else.' },
+    Fragile: { d: 'Feeling you could break.', o: 'Resilient' },
+    Despair: { d: 'Losing hope that things will get better.', m: ['Fearful', 'Sad'] },
+    Grief: { d: 'Deep sorrow over a loss.', n: 'Sadness at its strongest.' },
+    Powerless: { d: 'Unable to change what is happening.', o: 'Powerful' },
+    Hopeless: { d: 'Seeing no way forward.', o: 'Hopeful' },
+    Guilty: { d: 'Feeling you did something wrong.', n: 'Guilt is about what you did; shame is about who you are.' },
+    Ashamed: { d: 'Feeling that something is wrong with you, not just with what you did.', m: ['Fearful', 'Disgusted'] },
+    Remorseful: { d: 'Regret, and wanting to undo harm you caused.', m: ['Sad', 'Disgusted'] },
+    Mortified: { d: 'Intense embarrassment or shame.' },
+    Depressed: { d: 'Low, flat and heavy, often for a long stretch.' },
+    Empty: { d: 'Hollow, as if nothing is there.' },
+    Inferior: { d: 'Feeling less than others.' },
+    Miserable: { d: 'Very unhappy and uncomfortable.' },
+    Hurt: { d: 'Pain from something someone said or did.' },
+    Disappointed: { d: 'Let down when things fell short of what you hoped.', m: ['Surprised', 'Sad'] },
+    Embarrassed: { d: 'Uncomfortable at being seen in an awkward light.' },
+    Injured: { d: 'Wounded, in body or feelings.' },
+    Somber: { d: 'Serious and subdued.' },
+    Sorrowful: { d: 'Gentle, lasting sadness.' },
+    Discouraged: { d: 'Losing the heart to keep trying.', o: 'Encouraged' },
+
+    Disapproving: { d: 'Judging something as wrong or not good enough.', m: ['Surprised', 'Sad'], n: 'Plutchik’s disapproval: an unwelcome surprise that turns sour.' },
+    Judgmental: { d: 'Quick to criticise others.' },
+    Appalled: { d: 'Shocked by something terrible or wrong.', m: ['Surprised', 'Disgusted'] },
+    Revolted: { d: 'Strongly disgusted, wanting to turn away.' },
+    Awful: { d: 'Feeling terrible, often a little sick.' },
+    Nauseated: { d: 'Sick to your stomach.' },
+    Detestable: { d: 'Finding something, or yourself, hateful.' },
+    Queasy: { d: 'Slightly sick and unsettled.' },
+    Repelled: { d: 'Pushed away by something.' },
+    Horrified: { d: 'Shocked and frightened by something terrible.', m: ['Fearful', 'Disgusted'] },
+    Hesitant: { d: 'Holding back, unsure about moving toward something.' },
+    Aversion: { d: 'A steady wish to avoid something.' },
+    Distaste: { d: 'Mild dislike.' },
+    Loathing: { d: 'Intense disgust or hatred.', n: 'Disgust at its strongest.' },
+
+    'Let down': { d: 'Disappointed by someone you counted on.' },
+    Betrayed: { d: 'Hurt by someone breaking your trust.', m: ['Hurt', 'Angry'] },
+    Resentful: { d: 'Holding on to anger about past unfairness.' },
+    Wronged: { d: 'Treated unjustly.' },
+    Humiliated: { d: 'Made to feel small in front of others.' },
+    Disrespected: { d: 'Treated as if you do not matter.', o: 'Respected' },
+    Ridiculed: { d: 'Mocked or laughed at.' },
+    Insulted: { d: 'Offended by words or actions aimed at you.' },
+    Bitter: { d: 'Long-held anger mixed with disappointment.', m: ['Angry', 'Disappointed'] },
+    Indignant: { d: 'Angry at unfairness.' },
+    Violated: { d: 'Feeling your boundaries were crossed.' },
+    Envious: { d: 'Wanting what someone else has.', m: ['Sad', 'Angry'] },
+    Mad: { d: 'Plain, clear anger.' },
+    Furious: { d: 'Extremely angry.' },
+    Jealous: { d: 'Afraid of losing someone or something to another person.', m: ['Fearful', 'Angry'] },
+    Enraged: { d: 'Anger at its peak.', n: 'Plutchik’s rage, the strongest anger; annoyed is the mildest.' },
+    Aggressive: { d: 'Ready to attack or push hard.', m: ['Angry', 'Interested'] },
+    Provoked: { d: 'Deliberately stirred to anger.' },
+    Hostile: { d: 'Unfriendly and ready to fight.' },
+    Confrontational: { d: 'Wanting to face someone head-on.' },
+    Frustrated: { d: 'Blocked from what you want.' },
+    Infuriated: { d: 'Very angry, close to losing control.' },
+    Annoyed: { d: 'Mildly irritated.', n: 'The mildest anger.' },
+    Thwarted: { d: 'Stopped from doing what you meant to do.' },
+    Irritated: { d: 'Rubbed the wrong way.' },
+    Agitated: { d: 'Restless and stirred up.', o: 'Calm' },
+    Impatient: { d: 'Wanting things to move faster.' },
+    Distant: { d: 'Pulled back from others.' },
+    Withdrawn: { d: 'Turned inward, keeping to yourself.' },
+    Numb: { d: 'Feeling little or nothing, often after too much.' },
+    Critical: { d: 'Focused on what is wrong.' },
+    Skeptical: { d: 'Doubtful until shown otherwise.' },
+    Dismissive: { d: 'Treating something as not worth attention.', m: ['Disgusted', 'Angry'], n: 'Plutchik calls this blend contempt.' },
+    Sarcastic: { d: 'Saying the opposite of what you mean, with an edge.' },
+
+    Scared: { d: 'Afraid of a danger you can sense.' },
+    Helpless: { d: 'Unable to protect yourself or fix things.' },
+    Frightened: { d: 'Suddenly and strongly afraid.' },
+    Terrified: { d: 'Extremely afraid.', n: 'Fear at its strongest; apprehensive is the mildest.' },
+    Anxious: { d: 'Worried about what might happen.', m: ['Interested', 'Fearful'], n: 'Anticipation turned toward danger.' },
+    Overwhelmed: { d: 'Too much at once to handle.' },
+    Worried: { d: 'Turning a possible problem over and over.' },
+    Uneasy: { d: 'A vague sense that something is off.' },
+    Insecure: { d: 'Unsure of your worth or your place.', o: 'Confident' },
+    Inadequate: { d: 'Not good enough for what is asked.' },
+    Unsure: { d: 'Not knowing what to think or do.' },
+    Weak: { d: 'Lacking strength or force.', o: 'Strong' },
+    Worthless: { d: 'Feeling you have no value.', o: 'Valuable' },
+    Insignificant: { d: 'Feeling too small to matter.', o: 'Important' },
+    Rejected: { d: 'Turned away or not wanted.', o: 'Accepted' },
+    Excluded: { d: 'Left out by a group.' },
+    Persecuted: { d: 'Targeted or hunted by others.' },
+    Unwanted: { d: 'Feeling no one wants you around.' },
+    Threatened: { d: 'Sensing danger to you or something you care about.', o: 'Safe' },
+    Nervous: { d: 'Jittery before something uncertain.' },
+    Exposed: { d: 'Seen when you would rather be hidden.' },
+    Apprehensive: { d: 'Mild fear about what is coming.', n: 'The mildest fear.' },
+
+    Bored: { d: 'Nothing holds your interest.', o: 'Interested' },
+    Indifferent: { d: 'Not caring either way.' },
+    Apathetic: { d: 'Without the energy or interest to care.' },
+    Busy: { d: 'Lots to do and little room.' },
+    Pressured: { d: 'Pushed by demands or deadlines.' },
+    Rushed: { d: 'Not enough time.' },
+    Hurried: { d: 'Moving faster than feels comfortable.' },
+    Stressed: { d: 'Strained by more than you can easily handle.', m: ['Fearful', 'Tired'], o: 'Peaceful' },
+    'Out of control': { d: 'Things moving faster than you can steer.' },
+    Tired: { d: 'Low on energy.', o: 'Energized' },
+    Sleepy: { d: 'Wanting sleep.' },
+    Unfocused: { d: 'Attention keeps slipping.' },
+    Exhausted: { d: 'Completely drained.' },
+
+    Startled: { d: 'Jolted by something sudden.' },
+    Shocked: { d: 'Stunned by something big and unexpected.' },
+    Dismayed: { d: 'Upset and disheartened by an unwelcome surprise.', m: ['Surprised', 'Sad'] },
+    Confused: { d: 'Unable to make sense of what is happening.' },
+    Disillusioned: { d: 'Let down on finding something was not what you believed.', m: ['Disappointed', 'Thoughtful'] },
+    Perplexed: { d: 'Puzzled; you cannot work it out.' },
+    Distracted: { d: 'Attention pulled away.', n: 'Plutchik’s mildest surprise.' },
+    Amazed: { d: 'Struck by something remarkable.', n: 'Surprise at its strongest.' },
+    Astonished: { d: 'Very surprised.' },
+    Awe: { d: 'Wonder at something vast or beautiful.', m: ['Fearful', 'Surprised'] },
+    Speechless: { d: 'Too struck to find words.' },
+    Moved: { d: 'Emotionally touched.' },
+    Touched: { d: 'Warmed by someone’s kindness.', m: ['Trusting', 'Sad'], n: 'Plutchik calls this blend sentimentality.' },
+    Overcome: { d: 'Swept up by a strong feeling.' },
+    Excited: { d: 'Charged up about something to come.', m: ['Joyful', 'Interested'] },
+    Eager: { d: 'Keen to start or to get something.' },
+    Energetic: { d: 'Full of physical energy.' }
+  };
+
   const hexToRgb = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
   const rgbToHex = c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
   const mix = (h, t) => rgbToHex(hexToRgb(h).map(v => v + (255 - v) * t));
   const lum = h => { const [r,g,b] = hexToRgb(h).map(v => { v /= 255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); }); return .2126*r + .7152*g + .0722*b; };
   const DARK = '#26324A';
-  const textOn = h => { const L = lum(h); const cW = 1.05 / (L + .05), cD = (L + .05) / (lum(DARK) + .05); return cW >= 3.2 && cW >= cD * 0.8 ? '#FFFFFF' : DARK; };
+  const contrast = (a, b) => { const la = lum(a), lb = lum(b); return (Math.max(la, lb) + .05) / (Math.min(la, lb) + .05); };
+  const darken = (h, t) => rgbToHex(hexToRgb(h).map(v => v * (1 - t)));
+  // One text colour per family: white, unless the family's own colour is too light for it (Joyful).
+  // Lighter rings are tinted only as far as that text colour stays readable.
+  function familyShades(base) {
+    const ink = contrast('#FFFFFF', base) >= 3 ? '#FFFFFF' : DARK;
+    const tint = t => {
+      let c = mix(base, t);
+      if (ink === '#FFFFFF') { let x = t; while (contrast('#FFFFFF', c) < 3.4 && x > -0.4) { x -= 0.02; c = x >= 0 ? mix(base, x) : darken(base, -x); } }
+      return c;
+    };
+    return { ink, tint };
+  }
 
   const ROOT = { name: '', depth: 0, children: [] };
   for (const f of FAMILIES) {
-    const cn = { name: f.name, depth: 1, parent: ROOT, color: f.color, tone: f.tone || 'unpleasant', children: [] };
+    const { ink, tint } = familyShades(f.color);
+    const cn = { name: f.name, depth: 1, parent: ROOT, color: f.color, ink, tone: f.tone || 'unpleasant', children: [] };
     let k = 0;
     Object.entries(f.secs).forEach(([s, leaves], i) => {
       const tone = f.tone === 'pleasant' || (f.pleasantSecs || []).includes(s) ? 'pleasant' : 'unpleasant';
-      const sn = { name: s, depth: 2, parent: cn, tone, color: mix(f.color, .14 + .08 * (i % 2)), children: [] };
-      leaves.forEach(l => sn.children.push({ name: l, depth: 3, parent: sn, tone, leaves: 1, color: mix(f.color, .34 + .08 * (k++ % 2)) }));
+      const sn = { name: s, depth: 2, parent: cn, tone, ink, color: tint(.14 + .08 * (i % 2)), children: [] };
+      leaves.forEach(l => sn.children.push({ name: l, depth: 3, parent: sn, tone, ink, leaves: 1, color: tint(.34 + .08 * (k++ % 2)) }));
       sn.leaves = leaves.length;
       cn.children.push(sn);
     });
@@ -279,6 +515,8 @@
     ROOT.children.push(cn);
   }
   ROOT.leaves = ROOT.children.reduce((a, c) => a + c.leaves, 0);
+  const BYNAME = {};
+  (function walk(n) { for (const c of n.children || []) { if (!BYNAME[c.name]) BYNAME[c.name] = c; walk(c); } })(ROOT);
   const pathOf = n => { const p = []; while (n && n.depth) { p.unshift(n.name); n = n.parent; } return p; };
   const coreOf = n => { while (n.depth > 1) n = n.parent; return n; };
 
@@ -338,7 +576,7 @@
       s.mid = (s.a0 + s.a1) / 2;
       const g = el('g', { class: 'seg', 'data-i': i });
       s.p = el('path', { fill: s.node.color });
-      s.t = el('text', { fill: textOn(s.node.color) });
+      s.t = el('text', { fill: s.node.ink });
       s.t.textContent = s.node.name;
       g.append(s.p, s.t); segG.append(g); s.g = g;
     });
@@ -399,7 +637,24 @@
     $('roWord').textContent = s.node.name;
     $('roPath').textContent = p.length > 1 ? p.slice(0, -1).join(' › ') : 'family of feelings';
     $('roDot').style.background = s.node.color;
+    renderAbout(s.node);
     if (spinning && navigator.vibrate) navigator.vibrate(4);
+  }
+
+  function renderAbout(node) {
+    const a = ABOUT[node.name] || {};
+    $('def').textContent = a.d || '';
+    const rel = $('rel'); rel.textContent = '';
+    const name = n => { const b = document.createElement('b'); const i = document.createElement('i'); const x = BYNAME[n]; i.style.background = x ? x.color : '#B9BFCC'; b.append(i, n.toLowerCase()); return b; };
+    const add = (...parts) => { if (rel.childNodes.length) rel.append(' '); parts.forEach(p => rel.append(p)); };
+    if (a.m) add('A blend of ', name(a.m[0]), ' and ', name(a.m[1]), '.');
+    if (a.n) add(a.n);
+    if (a.o) add('Opposite of ', name(a.o), '.');
+    if (!a.m && !a.n && !a.o && node.parent && node.parent.children) {
+      const sib = node.parent.children.filter(c => c !== node).slice(0, 3);
+      if (node.depth === 1) return;
+      add('Close to ', ...sib.flatMap((c, i) => [name(c.name), i < sib.length - 2 ? ', ' : i === sib.length - 2 ? ' and ' : '']), '.');
+    }
   }
 
   // ---------- Motion ----------
