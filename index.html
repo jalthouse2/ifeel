@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F3F1EE">
+<title>iFeel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #26324A;
+    --ink-soft: #55607A;
+    --bg-a: #FCFCFB;
+    --bg-b: #F3F1EE;
+    --hub: #FFFFFF;
+    --accent: #2F3F5E;
+    --accent-ink: #FFFFFF;
+    --panel: rgba(255,255,255,0.72);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: radial-gradient(120% 90% at 50% 40%, var(--bg-b) 0%, var(--bg-a) 100%);
+    background-attachment: fixed;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+  ::selection { background: #E9D6AE; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: max(14px, env(safe-area-inset-top)) 20px 6px;
+    max-width: 720px; margin: 0 auto;
+  }
+  .brand { font-weight: 700; font-size: 24px; letter-spacing: -0.02em; }
+  .brand span { color: var(--accent); }
+
+  main {
+    max-width: 720px; margin: 0 auto; padding: 0 16px 24px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; margin: 6px 0 10px; text-align: center; color: var(--ink-soft); }
+
+  .wheelwrap { position: relative; width: min(94vw, calc(100dvh - 300px), 620px); min-width: 280px; aspect-ratio: 1; }
+  #wheel { width: 100%; height: 100%; display: block; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+  #wheel:active { cursor: grabbing; }
+  #wheel:focus { outline: none; }
+  #wheel:focus-visible .hub { stroke: var(--accent); stroke-width: 6; }
+  .pointer {
+    position: absolute; left: 50%; top: -6px; transform: translateX(-50%);
+    width: 0; height: 0; z-index: 2; pointer-events: none;
+    border-left: 13px solid transparent; border-right: 13px solid transparent;
+    border-top: 22px solid var(--ink);
+    filter: drop-shadow(0 2px 2px rgba(38,50,74,.25));
+  }
+
+  .seg { transition: transform .28s cubic-bezier(.2,.8,.2,1); }
+  .seg path { stroke: rgba(255,255,255,.75); stroke-width: 2; transition: stroke-width .2s; }
+  .seg text { font-family: "Manrope", system-ui, sans-serif; font-weight: 600; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .seg.on path { stroke: #fff; stroke-width: 5; }
+  .seg.on text { font-weight: 700; }
+  .hub { fill: var(--hub); stroke: #E6E3DE; stroke-width: 3; }
+  #centerG { cursor: pointer; }
+  #centerG text { text-anchor: middle; dominant-baseline: central; font-family: "Manrope", system-ui, sans-serif; pointer-events: none; fill: var(--ink); }
+
+  .readout { display: flex; align-items: center; gap: 14px; min-height: 76px; margin-top: 10px; }
+  .readout .dot { width: 22px; height: 22px; border-radius: 50%; flex: none; box-shadow: 0 0 0 3px rgba(255,255,255,.8); transition: background .3s; }
+  .readout .path { font-size: 16px; color: var(--ink-soft); font-weight: 500; }
+  .readout .word { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+  .readout.landed .word { animation: settle .6s ease; }
+  @keyframes settle { 0% { transform: scale(.94); opacity: .5 } 100% { transform: none; opacity: 1 } }
+
+  .actions { display: flex; gap: 12px; margin-top: 6px; }
+  .btn { border: 0; border-radius: 999px; padding: 14px 26px; font-size: 18px; font-weight: 600; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); }
+  .btn.ghost { background: var(--panel); color: var(--ink); }
+  .hint { font-size: 15px; color: var(--ink-soft); margin: 14px 0 0; text-align: center; }
+
+  #scrim { position: fixed; inset: 0; background: rgba(38,50,74,.28); opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 10; }
+  #scrim.show { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 11;
+    max-width: 620px; margin: 0 auto; max-height: 86dvh; overflow: auto;
+    background: #FCFBFE; border-radius: 26px 26px 0 0;
+    padding: 22px 22px max(22px, env(safe-area-inset-bottom));
+    transform: translateY(105%); transition: transform .32s cubic-bezier(.2,.8,.2,1);
+    box-shadow: 0 -8px 30px rgba(38,50,74,.15);
+  }
+  .sheet.show { transform: none; }
+  .sheet h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+  .sheet h2 .dot { width: 18px; height: 18px; border-radius: 50%; }
+  .sheet .sub { color: var(--ink-soft); font-size: 16px; margin: 0 0 18px; }
+  .sheet h3 { font-size: 17px; font-weight: 600; margin: 18px 0 10px; }
+  .levels { display: flex; gap: 8px; }
+  .levels button { flex: 1; border: 2px solid #DCDFE6; background: #fff; border-radius: 14px; padding: 12px 0; font-size: 18px; font-weight: 600; }
+  .levels button[aria-pressed="true"] { border-color: var(--accent); background: #E8ECF3; }
+  .levels-legend { display: flex; justify-content: space-between; font-size: 14px; color: var(--ink-soft); margin-top: 6px; }
+  textarea { width: 100%; min-height: 90px; border: 2px solid #DCDFE6; border-radius: 14px; padding: 12px; font: inherit; font-size: 17px; color: var(--ink); resize: vertical; background: #fff; }
+  .sheet .row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+
+  .strip { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; }
+  .day { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 64px; }
+  .day .lbl { font-size: 12px; color: var(--ink-soft); }
+  .day .d { width: 12px; height: 12px; border-radius: 50%; }
+  .entries { list-style: none; padding: 0; margin: 0; }
+  .entries li { display: grid; grid-template-columns: 16px 1fr auto; gap: 12px; align-items: start; padding: 12px 0; border-top: 1px solid #ECEEF2; }
+  .entries .d { width: 16px; height: 16px; border-radius: 50%; margin-top: 4px; }
+  .entries .w { font-weight: 700; font-size: 18px; }
+  .entries .p { font-size: 14px; color: var(--ink-soft); }
+  .entries .n { font-size: 16px; margin-top: 4px; }
+  .entries .t { font-size: 14px; color: var(--ink-soft); white-space: nowrap; }
+  .empty { color: var(--ink-soft); font-size: 16px; }
+
+  #toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 30px); opacity: 0; background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 999px; font-size: 16px; transition: all .3s; z-index: 20; pointer-events: none; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  @media (prefers-reduced-motion: reduce) { .seg, .sheet, #toast { transition: none; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">i<span>Feel</span></div>
+  <button id="journalBtn" class="btn ghost" style="padding:10px 18px;font-size:16px">Journal</button>
+</header>
+
+<main>
+  <h1 id="prompt">How are you, right now?</h1>
+  <div class="wheelwrap">
+    <div class="pointer" aria-hidden="true"></div>
+    <svg id="wheel" viewBox="-500 -500 1000 1000" role="application" aria-label="Emotion wheel. Use left and right arrows to turn, Enter to open or choose, Escape to go back." tabindex="0">
+      <g id="zoom"><g id="rot"></g></g>
+      <g id="centerG">
+        <circle class="hub" r="92"></circle>
+        <text id="hubMain" y="-6" font-size="30" font-weight="700"></text>
+        <text id="hubSub" y="30" font-size="18" font-weight="500"></text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="readout" id="readout" aria-live="polite">
+    <span class="dot" id="roDot"></span>
+    <div><div class="path" id="roPath"></div><div class="word" id="roWord"></div></div>
+  </div>
+  <div class="actions">
+    <button class="btn ghost" id="spinBtn">Spin</button>
+    <button class="btn primary" id="logBtn">That's it</button>
+  </div>
+  <p class="hint" id="hint">Drag to turn · tap a slice to open it · tap the centre to go back</p>
+</main>
+
+<div id="scrim"></div>
+
+<section class="sheet" id="logSheet" role="dialog" aria-modal="true" aria-labelledby="logTitle">
+  <h2 id="logTitle"><span class="dot" id="logDot"></span><span id="logWord"></span></h2>
+  <p class="sub" id="logPath"></p>
+  <h3>How strong is it?</h3>
+  <div class="levels" id="levels"></div>
+  <div class="levels-legend"><span>a little</span><span>a lot</span></div>
+  <h3>What's behind it? <span style="font-weight:400;color:var(--ink-soft)">(optional)</span></h3>
+  <textarea id="note" placeholder="A few words are enough"></textarea>
+  <div class="row">
+    <button class="btn ghost" id="cancelLog">Not now</button>
+    <button class="btn primary" id="saveLog">Save</button>
+  </div>
+</section>
+
+<section class="sheet" id="journalSheet" role="dialog" aria-modal="true" aria-labelledby="jTitle">
+  <h2 id="jTitle">Journal</h2>
+  <p class="sub">The last two weeks, one dot per check-in.</p>
+  <div class="strip" id="strip"></div>
+  <h3>Check-ins</h3>
+  <ul class="entries" id="entries"></ul>
+  <div class="row"><button class="btn ghost" id="closeJournal">Close</button></div>
+</section>
+
+<div id="toast" role="status"></div>
+
+<script>
+(() => {
+  // ---------- Data: the feelings wheel (core → secondary → specific), clockwise from the top ----------
+  const RAW = {
+    Fearful:   { Scared:['Helpless','Frightened'], Anxious:['Overwhelmed','Worried'], Insecure:['Inadequate','Inferior'], Weak:['Worthless','Insignificant'], Rejected:['Excluded','Persecuted'], Threatened:['Nervous','Exposed'] },
+    Angry:     { 'Let down':['Betrayed','Resentful'], Humiliated:['Disrespected','Ridiculed'], Bitter:['Indignant','Violated'], Mad:['Furious','Jealous'], Aggressive:['Provoked','Hostile'], Frustrated:['Infuriated','Annoyed'], Distant:['Withdrawn','Numb'], Critical:['Skeptical','Dismissive'] },
+    Disgusted: { Disapproving:['Judgmental','Embarrassed'], Disappointed:['Appalled','Revolted'], Awful:['Nauseated','Detestable'], Repelled:['Horrified','Hesitant'] },
+    Sad:       { Hurt:['Embarrassed','Disappointed'], Depressed:['Inferior','Empty'], Guilty:['Remorseful','Ashamed'], Despair:['Powerless','Grief'], Vulnerable:['Fragile','Victimized'], Lonely:['Abandoned','Isolated'] },
+    Happy:     { Optimistic:['Inspired','Hopeful'], Trusting:['Intimate','Sensitive'], Peaceful:['Thankful','Loving'], Powerful:['Creative','Courageous'], Accepted:['Valued','Respected'], Proud:['Confident','Successful'], Interested:['Inquisitive','Curious'], Content:['Joyful','Free'], Playful:['Cheeky','Aroused'] },
+    Surprised: { Excited:['Energetic','Eager'], Amazed:['Awe','Astonished'], Confused:['Perplexed','Disillusioned'], Startled:['Dismayed','Shocked'] },
+    Bad:       { Tired:['Unfocused','Sleepy'], Stressed:['Out of control','Overwhelmed'], Busy:['Rushed','Pressured'], Bored:['Apathetic','Indifferent'] }
+  };
+  const PALETTE = { Fearful:'#C9773D', Angry:'#B5463E', Disgusted:'#8C8547', Sad:'#5A8BAC', Happy:'#DDB45C', Surprised:'#678A7C', Bad:'#2F3F5E' };
+
+  const hexToRgb = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  const rgbToHex = c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+  const mix = (h, t) => rgbToHex(hexToRgb(h).map(v => v + (255 - v) * t));
+  const lum = h => { const [r,g,b] = hexToRgb(h).map(v => { v /= 255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); }); return .2126*r + .7152*g + .0722*b; };
+  const DARK = '#26324A';
+  const textOn = h => { const L = lum(h); const cWhite = 1.05 / (L + .05); const cDark = (L + .05) / (lum(DARK) + .05); return cWhite >= 3.2 && cWhite >= cDark * 0.8 ? '#FFFFFF' : DARK; };
+
+  const ROOT = { name: '', depth: 0, children: [] };
+  for (const [core, secs] of Object.entries(RAW)) {
+    const base = PALETTE[core];
+    const cn = { name: core, depth: 1, parent: ROOT, color: base, children: [] };
+    Object.entries(secs).forEach(([s, leaves], i) => {
+      const sn = { name: s, depth: 2, parent: cn, color: mix(base, .14 + .08 * (i % 2)), children: [] };
+      leaves.forEach((l, j) => sn.children.push({ name: l, depth: 3, parent: sn, color: mix(base, .34 + .08 * ((i * 2 + j) % 2)), leaves: 1 }));
+      sn.leaves = leaves.length;
+      cn.children.push(sn);
+    });
+    cn.leaves = cn.children.reduce((a, s) => a + s.leaves, 0);
+    ROOT.children.push(cn);
+  }
+  ROOT.leaves = ROOT.children.reduce((a, c) => a + c.leaves, 0);
+  const pathOf = n => { const p = []; while (n && n.depth) { p.unshift(n.name); n = n.parent; } return p; };
+  const coreOf = n => { while (n.depth > 1) n = n.parent; return n; };
+
+  // ---------- Geometry ----------
+  const NS = 'http://www.w3.org/2000/svg';
+  const R0 = 92, R1 = 262, R2 = 478;
+  const mod = (a, m) => ((a % m) + m) % m;
+  const norm = a => { a = mod(a + 180, 360) - 180; return a; };
+  const pt = (r, a) => { const t = a * Math.PI / 180; return [r * Math.sin(t), -r * Math.cos(t)]; };
+  function arcPath(r0, r1, a0, a1) {
+    const large = a1 - a0 > 180 ? 1 : 0;
+    const [x0, y0] = pt(r1, a0), [x1, y1] = pt(r1, a1), [x2, y2] = pt(r0, a1), [x3, y3] = pt(r0, a0);
+    return `M${x0},${y0}A${r1},${r1} 0 ${large} 1 ${x1},${y1}L${x2},${y2}A${r0},${r0} 0 ${large} 0 ${x3},${y3}Z`;
+  }
+  const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+
+  const $ = id => document.getElementById(id);
+  const svg = $('wheel'), zoomG = $('zoom'), rotG = $('rot');
+  let focus = ROOT, segs = [], rot = 0, current = -1, spinning = false;
+
+  function layout(node) {
+    const out = [];
+    const kids = node.children;
+    const two = kids.some(k => k.children);
+    const rings = two ? [[R0, R1], [R1, R2]] : [[R0, R2]];
+    let a = 0;
+    for (const k of kids) {
+      const span = 360 * k.leaves / node.leaves;
+      out.push({ node: k, a0: a, a1: a + span, r0: rings[0][0], r1: rings[0][1], ring: 0 });
+      if (two && k.children) {
+        let b = a;
+        for (const g of k.children) {
+          const s = span * g.leaves / k.leaves;
+          out.push({ node: g, a0: b, a1: b + s, r0: rings[1][0], r1: rings[1][1], ring: 1 });
+          b += s;
+        }
+      }
+      a += span;
+    }
+    return out;
+  }
+
+  function fontFor(seg, two) {
+    if (!two) return 40;
+    if (focus === ROOT) return seg.ring === 0 ? 34 : 25;
+    return seg.ring === 0 ? 30 : 28;
+  }
+
+  function build() {
+    segs = layout(focus);
+    const two = segs.some(s => s.ring === 1);
+    rotG.textContent = '';
+    segs.forEach((s, i) => {
+      s.mid = (s.a0 + s.a1) / 2;
+      s.rm = (s.r0 + s.r1) / 2 + (s.ring === 1 || !two ? 6 : 0);
+      s.flip = null;
+      const g = el('g', { class: 'seg', 'data-i': i });
+      const p = el('path', { d: arcPath(s.r0, s.r1, s.a0, s.a1), fill: s.node.color });
+      const t = el('text', { 'font-size': fontFor(s, two), fill: textOn(s.node.color) });
+      t.textContent = s.node.name;
+      g.append(p, t);
+      rotG.append(g);
+      s.g = g; s.t = t;
+    });
+    segs.forEach(s => { s.parentSeg = segs.find(o => o.node === s.node.parent) || null; });
+    current = -1;
+    updateHub();
+    applyRot(true);
+  }
+
+  function updateHub() {
+    if (focus === ROOT) { $('hubMain').textContent = 'iFeel'; $('hubSub').textContent = 'spin me'; }
+    else { $('hubMain').textContent = focus.name; $('hubSub').textContent = '‹ back'; }
+    $('hubMain').setAttribute('font-size', focus.name.length > 9 ? 22 : 28);
+    $('prompt').textContent = focus === ROOT ? 'How are you, right now?' : `${focus.name}… which kind?`;
+  }
+
+  function pick() {
+    const p = mod(-rot, 360);
+    let best = -1;
+    segs.forEach((s, i) => { if (p >= s.a0 && p < s.a1 && (best < 0 || s.ring > segs[best].ring)) best = i; });
+    return best;
+  }
+
+  function pop(s, d) {
+    if (!s) return;
+    const [x, y] = pt(d, s.mid);
+    s.g.style.transform = d ? `translate(${x}px, ${y}px)` : '';
+  }
+
+  function setCurrent(i) {
+    const prev = segs[current];
+    if (prev) { prev.g.classList.remove('on'); pop(prev, 0); pop(prev.parentSeg, 0); if (prev.parentSeg) prev.parentSeg.g.classList.remove('on'); }
+    current = i;
+    const s = segs[i];
+    if (!s) return;
+    s.g.classList.add('on');
+    if (s.parentSeg) { pop(s.parentSeg, 8); s.parentSeg.g.classList.add('on'); }
+    pop(s, s.parentSeg ? 18 : 22);
+    // bring the active slice above its neighbours
+    if (s.parentSeg) rotG.appendChild(s.parentSeg.g);
+    rotG.appendChild(s.g);
+    const p = pathOf(s.node);
+    $('roWord').textContent = s.node.name;
+    $('roPath').textContent = p.length > 1 ? p.slice(0, -1).join(' › ') : 'core feeling';
+    $('roDot').style.background = s.node.color;
+    if (spinning && navigator.vibrate) navigator.vibrate(4);
+  }
+
+  function applyRot(force) {
+    rotG.setAttribute('transform', `rotate(${rot})`);
+    for (const s of segs) {
+      const f = mod(s.mid + rot, 360) > 180;
+      if (force || f !== s.flip) {
+        s.flip = f;
+        s.t.setAttribute('transform', `rotate(${s.mid - 90}) translate(${s.rm} 0)${f ? ' rotate(180)' : ''}`);
+      }
+    }
+    const i = pick();
+    if (i !== current) setCurrent(i);
+  }
+
+  // ---------- Motion ----------
+  let raf = null;
+  const stop = () => { if (raf) cancelAnimationFrame(raf); raf = null; spinning = false; };
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+
+  function tween(ms, step, done) {
+    stop();
+    const t0 = performance.now();
+    const f = now => {
+      const t = Math.min(1, (now - t0) / ms);
+      step(easeOut(t));
+      if (t < 1) raf = requestAnimationFrame(f); else { raf = null; done && done(); }
+    };
+    raf = requestAnimationFrame(f);
+  }
+
+  function snapTo(s, then) {
+    if (!s) return;
+    const from = rot, to = rot + norm(-s.mid - rot);
+    tween(520, k => { rot = from + (to - from) * k; applyRot(); }, () => {
+      spinning = false;
+      if (navigator.vibrate) navigator.vibrate(12);
+      const ro = $('readout'); ro.classList.remove('landed'); void ro.offsetWidth; ro.classList.add('landed');
+      then && then();
+    });
+  }
+
+  function coast(v) {
+    stop();
+    spinning = true;
+    let vel = v, last = performance.now();
+    const f = now => {
+      const dt = Math.min(48, now - last); last = now;
+      rot += vel * dt;
+      vel *= Math.pow(0.985, dt / 16);
+      applyRot();
+      if (Math.abs(vel) > 0.025) raf = requestAnimationFrame(f);
+      else { raf = null; snapTo(segs[pick()]); }
+    };
+    raf = requestAnimationFrame(f);
+  }
+
+  function zoomTo(node, dir) {
+    stop();
+    const outScale = dir === 'in' ? 1.14 : 0.86;
+    tween(170, k => { zoomG.setAttribute('transform', `scale(${1 + (outScale - 1) * k})`); zoomG.style.opacity = 1 - k; }, () => {
+      focus = node;
+      rot = 0;
+      build();
+      const first = segs.filter(s => s.ring === Math.max(...segs.map(x => x.ring)))[0];
+      rot = -first.mid; applyRot(true);
+      const inScale = dir === 'in' ? 0.86 : 1.14;
+      tween(260, k => { zoomG.setAttribute('transform', `scale(${inScale + (1 - inScale) * k})`); zoomG.style.opacity = k; });
+    });
+  }
+
+  // ---------- Pointer input ----------
+  let drag = null;
+  const centre = () => { const r = svg.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, r.width]; };
+  const angleOf = (e, c) => Math.atan2(e.clientX - c[0], -(e.clientY - c[1])) * 180 / Math.PI;
+
+  svg.addEventListener('pointerdown', e => {
+    stop();
+    const c = centre();
+    drag = { c, last: angleOf(e, c), t: performance.now(), t0: performance.now(), x: e.clientX, y: e.clientY, moved: 0, vel: 0, target: e.target };
+    svg.setPointerCapture(e.pointerId);
+  });
+  svg.addEventListener('pointermove', e => {
+    if (!drag) return;
+    drag.moved = Math.max(drag.moved, Math.hypot(e.clientX - drag.x, e.clientY - drag.y));
+    const r = Math.hypot(e.clientX - drag.c[0], e.clientY - drag.c[1]);
+    const a = angleOf(e, drag.c);
+    if (r < drag.c[2] * 0.06) { drag.last = a; return; }
+    const now = performance.now(), dt = Math.max(1, now - drag.t);
+    const d = norm(a - drag.last);
+    if (drag.moved > 6) { rot += d; spinning = true; applyRot(); }
+    drag.vel = 0.6 * (d / dt) + 0.4 * drag.vel;
+    drag.last = a; drag.t = now;
+  });
+  const end = e => {
+    if (!drag) return;
+    const now = performance.now();
+    const d = drag; drag = null;
+    if (d.moved < 8 && now - d.t0 < 450) { spinning = false; return tap(d.target); }
+    const v = now - d.t > 90 ? 0 : Math.max(-2.2, Math.min(2.2, d.vel));
+    if (Math.abs(v) > 0.05) coast(v); else snapTo(segs[pick()]);
+  };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+
+  function tap(target) {
+    if (target.closest('#centerG')) { if (focus !== ROOT) zoomTo(focus.parent, 'out'); else spin(); return; }
+    const g = target.closest('.seg');
+    if (!g) return;
+    const s = segs[+g.dataset.i];
+    if (s.node.children) zoomTo(s.node, 'in');
+    else snapTo(s, () => openLog(s.node));
+  }
+
+  function spin() { coast((Math.random() < .5 ? -1 : 1) * (0.9 + Math.random() * 0.8)); }
+
+  // keyboard
+  svg.addEventListener('keydown', e => {
+    const maxRing = Math.max(...segs.map(x => x.ring));
+    const outer = segs.filter(s => s.ring === maxRing);
+    const cur = segs[current];
+    const idx = outer.findIndex(s => cur && (s === cur));
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      // pointer moves clockwise over the slices when the wheel turns anticlockwise
+      const n = outer[mod(idx + (e.key === 'ArrowRight' ? 1 : -1), outer.length)];
+      snapTo(n);
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (cur && cur.node.children) zoomTo(cur.node, 'in'); else if (cur) openLog(cur.node);
+    } else if (e.key === 'Escape' || e.key === 'Backspace') {
+      if (focus !== ROOT) zoomTo(focus.parent, 'out');
+    }
+  });
+
+  $('spinBtn').addEventListener('click', spin);
+  $('logBtn').addEventListener('click', () => { const s = segs[current]; if (s) openLog(s.node); });
+
+  // ---------- Storage ----------
+  const KEY = 'ifeel.entries.v1';
+  let memory = [];
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return memory; } };
+  const store = list => { memory = list; try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {} };
+
+  // ---------- Sheets ----------
+  const scrim = $('scrim');
+  let openSheet = null, chosen = null, level = 3;
+  function show(sheet) { openSheet = sheet; sheet.classList.add('show'); scrim.classList.add('show'); }
+  function hide() { if (openSheet) openSheet.classList.remove('show'); scrim.classList.remove('show'); openSheet = null; svg.focus({ preventScroll: true }); }
+  scrim.addEventListener('click', hide);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && openSheet) { e.stopPropagation(); hide(); } }, true);
+
+  const levelsEl = $('levels');
+  for (let i = 1; i <= 5; i++) {
+    const b = document.createElement('button');
+    b.textContent = i; b.setAttribute('aria-label', `Strength ${i} of 5`);
+    b.addEventListener('click', () => { level = i; paintLevels(); });
+    levelsEl.append(b);
+  }
+  const paintLevels = () => [...levelsEl.children].forEach((b, i) => b.setAttribute('aria-pressed', i + 1 === level));
+
+  function openLog(node) {
+    chosen = node; level = 3; paintLevels();
+    $('logWord').textContent = node.name;
+    $('logDot').style.background = node.color;
+    const p = pathOf(node);
+    $('logPath').textContent = p.length > 1 ? p.join(' › ') : 'Core feeling';
+    $('note').value = '';
+    show($('logSheet'));
+  }
+  $('cancelLog').addEventListener('click', hide);
+  $('saveLog').addEventListener('click', () => {
+    const list = load();
+    list.unshift({ t: Date.now(), name: chosen.name, path: pathOf(chosen), color: chosen.color, core: coreOf(chosen).name, level, note: $('note').value.trim() });
+    store(list);
+    hide();
+    toast('Noted. Thanks for checking in.');
+    if (focus !== ROOT) setTimeout(() => zoomTo(ROOT, 'out'), 350);
+  });
+
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
+
+  $('journalBtn').addEventListener('click', () => { renderJournal(); show($('journalSheet')); });
+  $('closeJournal').addEventListener('click', hide);
+
+  function renderJournal() {
+    const list = load();
+    const strip = $('strip'); strip.textContent = '';
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    for (let k = 13; k >= 0; k--) {
+      const d0 = new Date(today); d0.setDate(today.getDate() - k);
+      const d1 = new Date(d0); d1.setDate(d0.getDate() + 1);
+      const col = document.createElement('div'); col.className = 'day';
+      const lbl = document.createElement('span'); lbl.className = 'lbl';
+      lbl.textContent = d0.toLocaleDateString(undefined, { weekday: 'narrow' });
+      col.append(lbl);
+      list.filter(x => x.t >= d0 && x.t < d1).slice(0, 4).forEach(x => {
+        const dot = document.createElement('span'); dot.className = 'd'; dot.style.background = x.color; dot.title = x.name; col.append(dot);
+      });
+      strip.append(col);
+    }
+    const ul = $('entries'); ul.textContent = '';
+    if (!list.length) { const li = document.createElement('li'); li.className = 'empty'; li.style.display = 'block'; li.textContent = 'Nothing yet. Spin the wheel and save a feeling to start.'; ul.append(li); return; }
+    for (const x of list.slice(0, 60)) {
+      const li = document.createElement('li');
+      const dot = document.createElement('span'); dot.className = 'd'; dot.style.background = x.color;
+      const mid = document.createElement('div');
+      const w = document.createElement('div'); w.className = 'w'; w.textContent = x.name;
+      const p = document.createElement('div'); p.className = 'p'; p.textContent = `${x.path.join(' › ')} · strength ${x.level}/5`;
+      mid.append(w, p);
+      if (x.note) { const n = document.createElement('div'); n.className = 'n'; n.textContent = x.note; mid.append(n); }
+      const t = document.createElement('div'); t.className = 't';
+      t.textContent = new Date(x.t).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+      li.append(dot, mid, t); ul.append(li);
+    }
+  }
+
+  // ---------- Start ----------
+  build();
+  rot = -segs.find(s => s.ring === 1).mid; applyRot(true);
+})();
+</script>
+</body>
+</html>
