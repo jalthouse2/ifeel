@@ -57,7 +57,7 @@
   main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; display: flex; flex-direction: column; align-items: center; }
   h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; margin: 6px 0 10px; text-align: center; color: var(--ink-soft); min-height: 1.3em; }
 
-  .wheelwrap { position: relative; width: min(96vw, calc(100dvh - 400px), 600px); min-width: 280px; aspect-ratio: 1; margin-top: 26px; }
+  .wheelwrap { position: relative; width: min(96vw, calc(100dvh - 470px), 600px); min-width: 280px; aspect-ratio: 1; margin-top: 26px; }
   #wheel { width: 100%; height: 100%; display: block; overflow: visible; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
   #wheel:active { cursor: grabbing; }
   #wheel:focus { outline: none; }
@@ -81,8 +81,10 @@
   .hdr-right { display: flex; align-items: center; gap: 10px; }
   .rings { display: flex; align-items: center; gap: 4px; background: var(--panel); border-radius: 999px; padding: 3px 4px 3px 12px; box-shadow: inset 0 0 0 1px var(--line); }
   .rings span { font-size: 15px; font-weight: 600; color: var(--ink-soft); margin-right: 4px; }
-  .rings button { width: 38px; height: 38px; border: 0; border-radius: 50%; background: none; font-size: 16px; font-weight: 700; }
+  .rings button { width: 34px; height: 38px; border: 0; border-radius: 50%; background: none; font-size: 16px; font-weight: 700; }
   .rings button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  .zoombtn { position: absolute; right: 0; top: -40px; width: 46px; height: 46px; border-radius: 50%; border: 0; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); display: grid; place-items: center; z-index: 3; }
+  .zoombtn[aria-pressed="true"] { background: var(--accent); color: #fff; }
   .readout { display: flex; align-items: center; gap: 14px; min-height: 76px; margin-top: 10px; }
   .readout .dot { width: 22px; height: 22px; border-radius: 50%; flex: none; box-shadow: 0 0 0 3px rgba(255,255,255,.9); transition: background .3s; }
   .readout .path { font-size: 16px; color: var(--ink-soft); font-weight: 500; }
@@ -157,7 +159,7 @@
 
   #toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 30px); opacity: 0; background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 999px; font-size: 16px; transition: all .3s; z-index: 20; pointer-events: none; }
   #toast.show { opacity: 1; transform: translate(-50%, 0); }
-  @media (max-width: 420px) { .bodycheck { grid-template-columns: 92px minmax(0,1fr); } .bodycheck svg { width: 92px; } }
+  @media (max-width: 420px) { .rings span { display: none; } .brand { font-size: 21px; } .bodycheck { grid-template-columns: 92px minmax(0,1fr); } .bodycheck svg { width: 92px; } }
   @media (prefers-reduced-motion: reduce) { .sheet, #toast { transition: none; } }
 </style>
 </head>
@@ -165,7 +167,7 @@
 <header>
   <div class="brand">i<span>Feel</span></div>
   <div class="hdr-right">
-    <div class="rings" role="group" aria-label="Number of rings shown"><span>Rings</span><button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button></div>
+    <div class="rings" role="group" aria-label="Number of rings shown"><span>Rings</span><button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button><button data-n="4">4</button></div>
     <button id="journalBtn" class="btn ghost" style="padding:10px 18px;font-size:16px">Journal</button>
   </div>
 </header>
@@ -174,13 +176,15 @@
   <h1 id="prompt">How are you, right now?</h1>
   <div class="wheelwrap">
     <div class="pointer" aria-hidden="true"></div>
+    <button class="zoombtn" id="zoomBtn" aria-pressed="false" aria-label="Close-up"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M15.5 15.5 21 21"></path><path d="M7.5 10.5h6"></path><path id="zoomPlus" d="M10.5 7.5v6"></path></svg></button>
     <svg id="wheel" viewBox="-500 -500 1000 1000" role="application" aria-label="Emotion wheel. Use left and right arrows to turn, Enter to open or choose, Escape to go back." tabindex="0">
-      <g id="zoom"><g id="segs"></g></g>
+      <defs><clipPath id="wclip"><rect x="-520" y="-760" width="1040" height="1260"></rect></clipPath></defs>
+      <g clip-path="url(#wclip)"><g id="zoom"><g id="segs"></g>
       <g id="centerG">
-        <circle class="hub" r="92"></circle>
+        <circle class="hub" r="86"></circle>
         <text id="hubMain" y="-6" font-size="28" font-weight="700"></text>
         <text id="hubSub" y="30" font-size="18" font-weight="500"></text>
-      </g>
+      </g></g></g>
     </svg>
   </div>
 
@@ -219,6 +223,8 @@
     </svg>
     <div class="chips" id="zones"></div>
   </div>
+  <h3>Body energy <span class="muted">(optional)</span></h3>
+  <div class="chips" id="energy"></div>
   <h3>What's behind it? <span class="muted">(optional)</span></h3>
   <textarea id="note" placeholder="A few words are enough"></textarea>
   <div class="row">
@@ -249,39 +255,61 @@
 {
   // ---------- Feelings: core → secondary → specific, clockwise from the top ----------
   // The first three families (pleasant) take half the wheel; the rest share the other half.
-  const FAMILIES = [
-    { name: 'Joyful', color: '#D9AE55', tone: 'pleasant', secs: {
-      Playful: ['Cheeky','Amused','Aroused'], Cheerful: ['Delighted','Jovial','Pleased'], Elated: ['Ecstatic','Triumphant'],
-      Interested: ['Curious','Inquisitive','Fascinated'], Optimistic: ['Hopeful','Inspired','Encouraged'], Enthusiastic: ['Passionate','Motivated','Energized'] } },
-    { name: 'Powerful', color: '#5F8577', tone: 'pleasant', secs: {
-      Proud: ['Successful','Confident','Satisfied'], Accepted: ['Respected','Valued','Appreciated'], Courageous: ['Daring','Self-assured'],
-      Creative: ['Imaginative','Stimulated'], Resilient: ['Strong','Faithful'], Important: ['Worthwhile','Valuable'], Aware: ['Awakened','Authentic'] } },
-    { name: 'Peaceful', color: '#34476B', tone: 'pleasant', secs: {
-      Content: ['Free','Relieved'], Calm: ['Relaxed','Serene','Chilled'], Trusting: ['Safe','Receptive','Sensitive'],
-      Loving: ['Intimate','Nurturing','Generous'], Thankful: ['Grateful','Appreciative','Blessed'], Thoughtful: ['Pensive','Admiring'] } },
-    { name: 'Sad', color: '#5A8BAC', secs: {
-      Lonely: ['Isolated','Abandoned','Neglected'], Vulnerable: ['Victimized','Fragile'], Despair: ['Grief','Powerless','Hopeless'],
-      Guilty: ['Ashamed','Remorseful','Mortified'], Depressed: ['Empty','Inferior','Miserable'], Hurt: ['Disappointed','Embarrassed','Injured'], Somber: ['Sorrowful','Discouraged'] } },
-    { name: 'Disgusted', color: '#8C8547', secs: {
-      Disapproving: ['Judgmental','Embarrassed'], Disappointed: ['Appalled','Revolted'], Awful: ['Nauseated','Detestable','Queasy'],
-      Repelled: ['Horrified','Hesitant'], Aversion: ['Distaste','Loathing'] } },
-    { name: 'Angry', color: '#B5463E', secs: {
-      'Let down': ['Betrayed','Resentful','Wronged'], Humiliated: ['Disrespected','Ridiculed','Insulted'], Bitter: ['Indignant','Violated','Envious'],
-      Mad: ['Furious','Jealous','Enraged'], Aggressive: ['Provoked','Hostile','Confrontational'], Frustrated: ['Infuriated','Annoyed','Thwarted'],
-      Irritated: ['Agitated','Impatient'], Distant: ['Withdrawn','Numb'], Critical: ['Skeptical','Dismissive','Sarcastic'] } },
-    { name: 'Fearful', color: '#C9773D', secs: {
-      Scared: ['Helpless','Frightened','Terrified'], Anxious: ['Overwhelmed','Worried','Uneasy'], Insecure: ['Inadequate','Inferior','Unsure'],
-      Weak: ['Worthless','Insignificant'], Rejected: ['Excluded','Persecuted','Unwanted'], Threatened: ['Nervous','Exposed','Apprehensive'] } },
-    { name: 'Bad', color: '#6E6787', secs: {
-      Bored: ['Indifferent','Apathetic'], Busy: ['Pressured','Rushed','Hurried'], Stressed: ['Overwhelmed','Out of control'], Tired: ['Sleepy','Unfocused','Exhausted'] } },
-    { name: 'Surprised', color: '#A86B78', tone: 'mixed', pleasantSecs: ['Amazed','Moved','Excited'], secs: {
-      Startled: ['Shocked','Dismayed'], Confused: ['Disillusioned','Perplexed','Distracted'], Amazed: ['Astonished','Awe','Speechless'],
-      Moved: ['Touched','Overcome'], Excited: ['Eager','Energetic'] } }
+  // ---------- Feelings: four quarters (energy x pleasantness) → families → secondary → specific ----------
+  // After Yale's Mood Meter: how pleasant, and how much energy. The two pleasant quarters take half the wheel.
+  const QUADS = [
+    { name: 'Lively', color: '#D9AE55', tone: 'pleasant', fams: [
+      { name: 'Joyful', color: '#E0B44E', secs: {
+        Playful: ['Cheeky','Amused','Aroused'], Cheerful: ['Delighted','Jovial','Pleased'], Elated: ['Ecstatic','Triumphant'],
+        Optimistic: ['Hopeful','Inspired','Encouraged'] } },
+      { name: 'Powerful', color: '#C98A3A', secs: {
+        Proud: ['Successful','Confident','Satisfied'], Courageous: ['Daring','Self-assured'], Creative: ['Imaginative','Stimulated'] } },
+      { name: 'Excited', color: '#CF9566', secs: {
+        Interested: ['Curious','Inquisitive','Fascinated'], Amazed: ['Astonished','Awe','Speechless'],
+        Enthusiastic: ['Passionate','Motivated','Energized'], Eager: ['Energetic','Expectant'] } } ] },
+    { name: 'Easy', color: '#6E987F', tone: 'pleasant', fams: [
+      { name: 'Peaceful', color: '#5F8577', secs: {
+        Content: ['Free','Relieved'], Calm: ['Relaxed','Serene','Chilled'], Thoughtful: ['Pensive','Admiring'] } },
+      { name: 'Connected', color: '#7C9A5E', secs: {
+        Loving: ['Intimate','Nurturing','Generous'], Trusting: ['Safe','Receptive','Sensitive'],
+        Thankful: ['Grateful','Appreciative','Blessed'], Moved: ['Touched','Overcome'] } },
+      { name: 'Secure', color: '#4D7E86', secs: {
+        Accepted: ['Respected','Valued','Appreciated'], Important: ['Worthwhile','Valuable'], Resilient: ['Strong','Faithful'], Aware: ['Awakened','Authentic'] } } ] },
+    { name: 'Heavy', color: '#4F7FA6', fams: [
+      { name: 'Sad', color: '#5A8BAC', secs: {
+        Lonely: ['Isolated','Abandoned','Neglected'], Vulnerable: ['Victimized','Fragile'], Despair: ['Grief','Powerless','Hopeless'],
+        Guilty: ['Ashamed','Remorseful','Mortified'], Depressed: ['Empty','Inferior','Miserable'], Hurt: ['Disappointed','Embarrassed','Injured'], Somber: ['Sorrowful','Discouraged'] } },
+      { name: 'Disconnected', color: '#6E6787', secs: {
+        Bored: ['Indifferent','Apathetic'], Weary: ['Exhausted','Drained'], Distant: ['Withdrawn','Numb'] } } ] },
+    { name: 'Tense', color: '#B9503F', fams: [
+      { name: 'Angry', color: '#B5463E', secs: {
+        'Let down': ['Betrayed','Resentful','Wronged'], Humiliated: ['Disrespected','Ridiculed','Insulted'], Bitter: ['Indignant','Violated','Envious'],
+        Mad: ['Furious','Jealous','Enraged'], Aggressive: ['Provoked','Hostile','Confrontational'], Frustrated: ['Infuriated','Annoyed','Thwarted'],
+        Irritated: ['Agitated','Impatient'], Critical: ['Skeptical','Dismissive','Sarcastic'] } },
+      { name: 'Fearful', color: '#C9773D', secs: {
+        Scared: ['Helpless','Frightened','Terrified'], Anxious: ['Overwhelmed','Worried','Uneasy'], Stressed: ['Pressured','Rushed','Out of control'],
+        Insecure: ['Inadequate','Inferior','Unsure'], Weak: ['Worthless','Insignificant'], Rejected: ['Excluded','Persecuted','Unwanted'],
+        Threatened: ['Nervous','Exposed','Apprehensive'] } },
+      { name: 'Disgusted', color: '#8C8547', secs: {
+        Disapproving: ['Judgmental','Embarrassed'], Disappointed: ['Appalled','Revolted'], Awful: ['Nauseated','Detestable','Queasy'],
+        Repelled: ['Horrified','Hesitant'], Aversion: ['Distaste','Loathing'] } },
+      { name: 'Surprised', color: '#A86B78', secs: {
+        Startled: ['Shocked','Dismayed'], Confused: ['Disillusioned','Perplexed','Distracted'] } } ] }
   ];
 
   // ---------- What each feeling means, and how it relates to the others ----------
   // d: definition. m: a blend, after Plutchik's wheel where he names one. n: a note. o: its opposite.
   const ABOUT = {
+    Lively: { d: 'Pleasant, with energy to spare.', n: 'High energy and high pleasantness: one of the four quarters of Yale\u2019s Mood Meter.', o: 'Heavy' },
+    Easy: { d: 'Pleasant and unhurried, with low energy.', n: 'Low energy, high pleasantness.', o: 'Tense' },
+    Heavy: { d: 'Unpleasant and low on energy.', n: 'Low energy, low pleasantness. You can stop here if you can\u2019t name more yet.', o: 'Lively' },
+    Tense: { d: 'Unpleasant and keyed up, with lots of energy.', n: 'High energy, low pleasantness. You can stop here if you can\u2019t name more yet.', o: 'Easy' },
+    Connected: { d: 'Warmly linked to others.', o: 'Disconnected' },
+    Secure: { d: 'Steady in your worth and your place.', o: 'Insecure' },
+    Disconnected: { d: 'Cut off from others, from interest, or from your own feelings.', o: 'Connected' },
+    Weary: { d: 'Worn down, in spirit as much as in body.' },
+    Drained: { d: 'Emptied out, with nothing left to give.' },
+    Expectant: { d: 'Waiting for something you believe is coming.' },
     Joyful: { d: 'Lightness and pleasure in what is happening.', o: 'Sad' },
     Powerful: { d: 'Feeling capable, worthy and able to act.', o: 'Weak' },
     Peaceful: { d: 'Settled and at ease, with nothing pulling at you.', o: 'Stressed' },
@@ -470,7 +498,7 @@
     Pressured: { d: 'Pushed by demands or deadlines.' },
     Rushed: { d: 'Not enough time.' },
     Hurried: { d: 'Moving faster than feels comfortable.' },
-    Stressed: { d: 'Strained by more than you can easily handle.', m: ['Fearful', 'Tired'], o: 'Peaceful' },
+    Stressed: { d: 'Strained by more than you can easily handle.', m: ['Fearful', 'Weary'], o: 'Peaceful' },
     'Out of control': { d: 'Things moving faster than you can steer.' },
     Tired: { d: 'Low on energy.', o: 'Energized' },
     Sleepy: { d: 'Wanting sleep.' },
@@ -491,7 +519,7 @@
     Moved: { d: 'Emotionally touched.' },
     Touched: { d: 'Warmed by someone’s kindness.', m: ['Trusting', 'Sad'], n: 'Plutchik calls this blend sentimentality.' },
     Overcome: { d: 'Swept up by a strong feeling.' },
-    Excited: { d: 'Charged up about something to come.', m: ['Joyful', 'Interested'] },
+    Excited: { d: 'Charged up and drawn toward what is happening or coming.', m: ['Joyful', 'Interested'] },
     Eager: { d: 'Keen to start or to get something.' },
     Energetic: { d: 'Full of physical energy.' }
   };
@@ -527,19 +555,24 @@
   }
 
   const ROOT = { name: '', depth: 0, children: [] };
-  for (const f of FAMILIES) {
-    const { ink, tint } = familyShades(f.color);
-    const cn = { name: f.name, depth: 1, parent: ROOT, color: f.color, ink, tone: f.tone || 'unpleasant', children: [] };
-    let k = 0;
-    Object.entries(f.secs).forEach(([s, leaves], i) => {
-      const tone = f.tone === 'pleasant' || (f.pleasantSecs || []).includes(s) ? 'pleasant' : 'unpleasant';
-      const sn = { name: s, depth: 2, parent: cn, tone, ink, color: tint(.14 + .08 * (i % 2)), children: [] };
-      leaves.forEach(l => sn.children.push({ name: l, depth: 3, parent: sn, tone, ink, leaves: 1, color: tint(.34 + .08 * (k++ % 2)) }));
-      sn.leaves = leaves.length;
-      cn.children.push(sn);
-    });
-    cn.leaves = cn.children.reduce((a, s) => a + s.leaves, 0);
-    ROOT.children.push(cn);
+  for (const q of QUADS) {
+    const qs = familyShades(q.color), tone = q.tone || 'unpleasant';
+    const qn = { name: q.name, depth: 1, parent: ROOT, color: q.color, ink: qs.ink, tone, children: [] };
+    for (const f of q.fams) {
+      const { ink, tint } = familyShades(f.color);
+      const fn = { name: f.name, depth: 2, parent: qn, color: f.color, ink, tone, children: [] };
+      let k = 0;
+      Object.entries(f.secs).forEach(([s2, leaves], i) => {
+        const sn = { name: s2, depth: 3, parent: fn, tone, ink, color: tint(.14 + .08 * (i % 2)), children: [] };
+        leaves.forEach(l => sn.children.push({ name: l, depth: 4, parent: sn, tone, ink, leaves: 1, color: tint(.34 + .08 * (k++ % 2)) }));
+        sn.leaves = leaves.length;
+        fn.children.push(sn);
+      });
+      fn.leaves = fn.children.reduce((a, x) => a + x.leaves, 0);
+      qn.children.push(fn);
+    }
+    qn.leaves = qn.children.reduce((a, x) => a + x.leaves, 0);
+    ROOT.children.push(qn);
   }
   ROOT.leaves = ROOT.children.reduce((a, c) => a + c.leaves, 0);
   const BYNAME = {};
@@ -549,9 +582,17 @@
 
   // ---------- Geometry ----------
   const NS = 'http://www.w3.org/2000/svg';
-  const RADII = { 1: [88, 468], 2: [88, 248, 468], 3: [88, 192, 314, 468] }, BUMP = 78;
-  let layers = 2;
-  try { const v = +localStorage.getItem('ifeel.rings'); if (v >= 1 && v <= 3) layers = v; } catch (e) {}
+  const RADII = { 1: [88, 468], 2: [88, 248, 468], 3: [88, 192, 314, 468], 4: [88, 168, 252, 352, 468] }, BUMP = 78;
+  const SC = 2.1;  // close-up magnification
+  const narrow = window.innerWidth < 700;
+  let layers = narrow ? 4 : 3, closeup = narrow, zc = closeup ? 1 : 0, viewExtra = 1;
+  try {
+    const v = +localStorage.getItem('ifeel.rings2'); if (v >= 1 && v <= 4) layers = v;
+    const c = localStorage.getItem('ifeel.closeup'); if (c === '0' || c === '1') { closeup = c === '1'; zc = closeup ? 1 : 0; }
+  } catch (e) {}
+  // Close-up: the wheel is drawn SC times bigger with its centre near the bottom, so only the top arc shows.
+  const viewS = () => 1 + zc * (SC - 1);
+  const viewTy = () => zc * (468 * SC - 470);
   const mod = (a, m) => ((a % m) + m) % m;
   const norm = a => mod(a + 180, 360) - 180;
   const pt = (r, a) => { const t = a * Math.PI / 180; return [r * Math.sin(t), -r * Math.cos(t)]; };
@@ -568,10 +609,10 @@
   let K = 1, W = 14, maxRing = 1;
 
   // Lens: slices near the pointer get wider (fisheye on angle), longer and larger-lettered.
-  const fish = d => { const n = Math.round(d / 360), r = d - 360 * n, x = r / 180; return 180 * (K + 1) * x / (K * Math.abs(x) + 1) + 360 * n; };
+  const fish = d => { const k = K * (1 - .7 * zc), n = Math.round(d / 360), r = d - 360 * n, x = r / 180; return 180 * (k + 1) * x / (k * Math.abs(x) + 1) + 360 * n; };
 
   function layout(node) {
-    const out = [], n = Math.min(layers, 3 - node.depth), radii = RADII[n];
+    const out = [], n = Math.min(layers, 4 - node.depth), radii = RADII[n];
     (function place(parent, a0, span, ring) {
       const kids = parent.children;
       let spans;
@@ -590,7 +631,7 @@
     return out;
   }
 
-  const FONTS = { 1: [48], 2: [40, 32], 3: [30, 28, 29] };
+  const FONTS = { 1: [48], 2: [40, 32], 3: [30, 28, 29], 4: [26, 24, 26, 28] };
   const baseFont = s => FONTS[s.n][s.ring] + (s.n === 2 && focus !== ROOT && s.ring === 0 ? -4 : 0);
 
   function build() {
@@ -623,7 +664,7 @@
       const d0 = norm(s.a0 - p), d1 = d0 + (s.a1 - s.a0), dm = (d0 + d1) / 2;
       const e = Math.exp(-((dm / W) ** 2));
       const D0 = fish(d0), D1 = fish(d1), Dm = (D0 + D1) / 2;
-      const r1 = s.r1 + (s.ring === maxRing ? BUMP * e : onPath.has(s) ? 10 : 0);
+      const r1 = s.r1 + (s.ring === maxRing ? BUMP * (1 - .7 * zc) * e : onPath.has(s) ? 10 : 0);
       s.p.setAttribute('d', arcPath(s.r0, r1, D0, D1));
       const glow = Math.max(s.ring === maxRing ? e : 0, onPath.has(s) ? .75 : 0);
       s.p.setAttribute('fill', rgbToHex(s.rgb.map((v, j) => v + (s.brgb[j] - v) * glow)));
@@ -631,7 +672,7 @@
       const arcW = (D1 - D0) * Math.PI / 180 * rm;
       const radial = r1 - s.r0 - 18;
       const fs = Math.min(baseFont(s) * (1 + .55 * e), arcW * 0.8, radial / (s.node.name.length * 0.6));
-      if (fs < 14) { s.t.setAttribute('visibility', 'hidden'); continue; }
+      if (fs * viewS() < 14) { s.t.setAttribute('visibility', 'hidden'); continue; }
       const flip = mod(Dm, 360) > 180;
       s.t.setAttribute('visibility', 'visible');
       s.t.setAttribute('font-size', fs.toFixed(1));
@@ -640,13 +681,18 @@
     if (ci !== current) setCurrent(ci);
   }
 
+  function setView(extra) {
+    if (extra !== undefined) viewExtra = extra;
+    zoomG.setAttribute('transform', `translate(0 ${viewTy().toFixed(1)}) scale(${(viewS() * viewExtra).toFixed(4)})`);
+  }
+
   function updateHub() {
     if (breathing) return;
     if (focus === ROOT) { $('hubMain').textContent = 'iFeel'; $('hubSub').textContent = 'spin me'; }
     else { $('hubMain').textContent = focus.name; $('hubSub').textContent = '‹ back'; }
     $('hubMain').setAttribute('font-size', focus.name.length > 9 ? 22 : 28);
     $('prompt').textContent = focus === ROOT ? 'How are you, right now?' : `${focus.name}… which kind?`;
-    $('hint').textContent = 'Drag to turn · tap a slice to open it · tap the centre to go back';
+    $('hint').textContent = 'Drag to turn · tap a slice to open it · pinch or tap the magnifier for a close-up';
   }
 
   function pick() {
@@ -667,7 +713,7 @@
     segG.appendChild(s.g);
     const p = pathOf(s.node);
     $('roWord').textContent = s.node.name;
-    $('roPath').textContent = p.length > 1 ? p.slice(0, -1).join(' › ') : 'family of feelings';
+    $('roPath').textContent = p.length > 1 ? p.slice(0, -1).join(' › ') : 'energy and pleasantness';
     $('roDot').style.background = s.node.color;
     renderAbout(s.node);
     if (spinning && navigator.vibrate) navigator.vibrate(4);
@@ -735,14 +781,14 @@
   function zoomTo(node, dir) {
     stop();
     const outScale = dir === 'in' ? 1.14 : 0.86;
-    tween(170, k => { zoomG.setAttribute('transform', `scale(${1 + (outScale - 1) * k})`); zoomG.style.opacity = 1 - k; }, () => {
+    tween(170, k => { setView(1 + (outScale - 1) * k); zoomG.style.opacity = 1 - k; }, () => {
       focus = node;
       rot = 0;
       build();
       const first = segs.find(s => s.ring === maxRing);
       rot = -first.mid; draw();
       const inScale = dir === 'in' ? 0.86 : 1.14;
-      tween(260, k => { zoomG.setAttribute('transform', `scale(${inScale + (1 - inScale) * k})`); zoomG.style.opacity = k; });
+      tween(260, k => { setView(inScale + (1 - inScale) * k); zoomG.style.opacity = k; });
     });
   }
 
@@ -762,7 +808,7 @@
       if (t >= CYC * N) return endBreath();
       const c = t % CYC, inhale = c < IN;
       const b = inhale ? easeInOut(c / IN) : 1 - easeInOut((c - IN) / OUT);
-      zoomG.setAttribute('transform', `scale(${(0.84 + 0.16 * b).toFixed(4)})`);
+      setView(0.84 + 0.16 * b);
       $('hubMain').textContent = inhale ? 'Breathe in' : 'Breathe out';
       $('hubSub').textContent = `${Math.floor(t / CYC) + 1} of ${N}`;
       rot += 0.004 * dt; draw();
@@ -773,19 +819,22 @@
   function endBreath(silent) {
     if (!breathing) return;
     breathing = false; cancelAnimationFrame(bRaf);
-    const m = (zoomG.getAttribute('transform') || 'scale(1)').match(/[\d.]+/);
-    const s0 = m ? +m[0] : 1;
+    const s0 = viewExtra;
     updateHub();
-    if (!silent) tween(400, k => { zoomG.setAttribute('transform', `scale(${s0 + (1 - s0) * k})`); draw(); }, () => snapTo(segs[pick()]));
-    else zoomG.setAttribute('transform', 'scale(1)');
+    if (!silent) tween(400, k => { setView(s0 + (1 - s0) * k); draw(); }, () => snapTo(segs[pick()]));
+    else setView(1);
   }
 
   // ---------- Pointer input ----------
   let drag = null;
-  const centre = () => { const r = svg.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, r.width]; };
+  const centre = () => { const r = svg.getBoundingClientRect(); return [r.left + r.width / 2, r.top + (viewTy() + 500) / 1000 * r.height, r.width * viewS()]; };
   const angleOf = (e, c) => Math.atan2(e.clientX - c[0], -(e.clientY - c[1])) * 180 / Math.PI;
 
+  const pts = new Map(); let pinch = null;
+  const spread = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
   svg.addEventListener('pointerdown', e => {
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 2) { drag = null; pinch = { d0: spread() }; return; }
     if (breathing) endBreath(true);
     stop();
     const c = centre();
@@ -793,6 +842,13 @@
     svg.setPointerCapture(e.pointerId);
   });
   svg.addEventListener('pointermove', e => {
+    if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pts.size === 2) {
+      const r = spread() / pinch.d0;
+      if (r > 1.18 && !closeup) { setCloseup(true); pinch = null; }
+      else if (r < 0.85 && closeup) { setCloseup(false); pinch = null; }
+      return;
+    }
     if (!drag) return;
     drag.moved = Math.max(drag.moved, Math.hypot(e.clientX - drag.x, e.clientY - drag.y));
     const r = Math.hypot(e.clientX - drag.c[0], e.clientY - drag.c[1]);
@@ -804,7 +860,9 @@
     drag.vel = 0.6 * (d / dt) + 0.4 * drag.vel;
     drag.last = a; drag.t = now;
   });
-  const end = () => {
+  const end = e => {
+    pts.delete(e.pointerId);
+    if (pts.size < 2) pinch = null;
     if (!drag) return;
     const now = performance.now(), d = drag; drag = null;
     if (d.moved < 8 && now - d.t0 < 450) { spinning = false; return tap(d.target); }
@@ -843,9 +901,24 @@
   document.querySelectorAll('.rings button').forEach(b => b.addEventListener('click', () => {
     if (breathing) endBreath(true);
     layers = +b.dataset.n; paintRings();
-    try { localStorage.setItem('ifeel.rings', layers); } catch (e) {}
+    try { localStorage.setItem('ifeel.rings2', layers); } catch (e) {}
     const keep = rot; build(); rot = keep; draw(); snapTo(segs[pick()]);
   }));
+  function setCloseup(on) {
+    closeup = on;
+    try { localStorage.setItem('ifeel.closeup', on ? '1' : '0'); } catch (e) {}
+    paintZoomBtn();
+    const z0 = zc, z1 = on ? 1 : 0;
+    tween(420, k => { zc = z0 + (z1 - z0) * k; setView(); draw(); }, () => snapTo(segs[pick()]));
+  }
+  function paintZoomBtn() {
+    const b = $('zoomBtn');
+    b.setAttribute('aria-pressed', closeup);
+    b.setAttribute('aria-label', closeup ? 'Show the whole wheel' : 'Close-up');
+    $('zoomPlus').style.display = closeup ? 'none' : '';
+  }
+  $('zoomBtn').addEventListener('click', () => { if (breathing) endBreath(true); setCloseup(!closeup); });
+
   $('spinBtn').addEventListener('click', spin);
   $('logBtn').addEventListener('click', () => { if (breathing) endBreath(true); const s = segs[current]; if (s) openLog(s.node); });
 
@@ -873,6 +946,12 @@
   }
   const paintLevels = () => [...levelsEl.children].forEach((b, i) => b.setAttribute('aria-pressed', i + 1 === level));
 
+  const ENERGY = ['Exhausted', 'Tired', 'OK', 'Rested', 'Wired'];
+  let energy = null;
+  const energyEl = $('energy');
+  ENERGY.forEach(x => { const b = document.createElement('button'); b.textContent = x; b.dataset.e = x;
+    b.addEventListener('click', () => { energy = energy === x ? null : x; paintEnergy(); }); energyEl.append(b); });
+  const paintEnergy = () => [...energyEl.children].forEach(b => b.setAttribute('aria-pressed', b.dataset.e === energy));
   const ZONES = ['Head', 'Jaw and throat', 'Shoulders', 'Chest', 'Stomach', 'Arms and hands', 'Legs'];
   const zonesEl = $('zones');
   ZONES.forEach(z => {
@@ -887,7 +966,7 @@
   }
 
   function openLog(node) {
-    chosen = node; level = 3; zonesOn = new Set(); paintLevels(); paintZones();
+    chosen = node; level = 3; zonesOn = new Set(); energy = null; paintLevels(); paintZones(); paintEnergy();
     $('logWord').textContent = node.name;
     $('logDot').style.background = node.color;
     const p = pathOf(node);
@@ -897,7 +976,7 @@
   }
   $('cancelLog').addEventListener('click', hide);
   $('saveLog').addEventListener('click', () => {
-    const entry = { t: Date.now(), name: chosen.name, path: pathOf(chosen), color: chosen.color, core: coreOf(chosen).name, tone: chosen.tone, level, zones: [...zonesOn], note: $('note').value.trim() };
+    const entry = { t: Date.now(), name: chosen.name, path: pathOf(chosen), color: chosen.color, core: coreOf(chosen).name, tone: chosen.tone, level, zones: [...zonesOn], energy, note: $('note').value.trim() };
     const list = load(); list.unshift(entry); store(list);
     openAfter(entry);
   });
@@ -999,7 +1078,7 @@
       const mid = document.createElement('div');
       const w = document.createElement('div'); w.className = 'w'; w.textContent = x.name + (x.savored ? ' · savored' : '');
       const p = document.createElement('div'); p.className = 'p';
-      p.textContent = [x.path.join(' › '), `strength ${x.level}/5`, (x.zones || []).join(', ')].filter(Boolean).join(' · ');
+      p.textContent = [x.path.join(' › '), `strength ${x.level}/5`, x.energy ? `energy: ${x.energy.toLowerCase()}` : '', (x.zones || []).join(', ')].filter(Boolean).join(' · ');
       mid.append(w, p);
       if (x.note) { const n = document.createElement('div'); n.className = 'n'; n.textContent = x.note; mid.append(n); }
       if (x.ok) { const n = document.createElement('div'); n.className = 'n'; n.textContent = `Still OK: ${x.ok}`; mid.append(n); }
@@ -1013,7 +1092,7 @@
   build();
   const calm = segs.find(s => s.node.name === 'Calm') || segs.find(s => s.node.name === 'Peaceful');
   rot = -calm.mid; draw();
-  paintRings();
+  paintRings(); paintZoomBtn(); setView();
   startBreath();
 }
 </script>
